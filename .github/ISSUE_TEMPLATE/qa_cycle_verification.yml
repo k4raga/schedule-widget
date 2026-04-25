@@ -1,0 +1,49 @@
+name: "QA Cycle / Verification"
+description: "Request a QA pass for a bounded cycle."
+title: "[QA] "
+labels: ["area:qa", "type:test"]
+body:
+  - type: input
+    id: cycle_id
+    attributes:
+      label: Cycle / issue id
+      placeholder: SW-021
+    validations:
+      required: true
+  - type: textarea
+    id: changed_surface
+    attributes:
+      label: Changed surface
+      description: What code/docs/flows changed in this cycle?
+    validations:
+      required: true
+  - type: textarea
+    id: required_scenarios
+    attributes:
+      label: Required scenarios
+      description: Exact scenarios QA must run.
+      placeholder: |
+        - startup
+        - browse date switch
+        - recurring projection
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true to pass?
+    validations:
+      required: true
+  - type: textarea
+    id: report_format
+    attributes:
+      label: Required report format
+      value: |
+        - Findings first
+        - Scenarios run: pass/fail
+        - Unverified scenarios
+        - Residual risks
+        - Final verdict
+    validations:
+      required: true

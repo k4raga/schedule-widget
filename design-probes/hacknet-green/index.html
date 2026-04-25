@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hacknet Green - Schedule Widget Mockup</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <article class="widget-shell" aria-label="Компактный виджет расписания">
+      <header class="top-panel">
+        <div class="panel-cell mode">
+          <span class="cell-label">режим</span>
+          <strong>NODE:SCHED</strong>
+        </div>
+        <div class="panel-cell now-time">
+          <span class="cell-label">система</span>
+          <strong>19:42</strong>
+        </div>
+        <div class="panel-cell day">
+          <span class="cell-label">четверг</span>
+          <strong>9 апреля</strong>
+        </div>
+      </header>
+
+      <section class="focus-panel">
+        <p class="focus-label">текущий фокус</p>
+        <h1>SW-033: жёсткий terminal-профиль</h1>
+        <p class="focus-meta">окно: 19:20-20:00 | канал: design-probes</p>
+      </section>
+
+      <main class="tasks-panel">
+        <div class="tasks-head">
+          <span>время</span>
+          <span>задача</span>
+          <span>статус</span>
+        </div>
+
+        <div class="task-row done">
+          <span class="time">17:40-18:00</span>
+          <span class="task">Проверить AGENT-LOOP и task-board</span>
+          <span class="state">готово</span>
+        </div>
+        <div class="task-row active">
+          <span class="time">19:20-20:00</span>
+          <span class="task">Сделать интерфейс ближе к Hacknet без green-on-green</span>
+          <span class="state">в работе</span>
+        </div>
+        <div class="task-row">
+          <span class="time">20:05-20:25</span>
+          <span class="task">Сверить плотность панелей и читаемость текста</span>
+          <span class="state">очередь</span>
+        </div>
+        <div class="task-row">
+          <span class="time">20:30-20:50</span>
+          <span class="task">Подготовить handoff для manager-loop</span>
+          <span class="state">очередь</span>
+        </div>
+        <div class="task-row muted">
+          <span class="time">21:00-21:15</span>
+          <span class="task">Резерв под правки после проверки QA</span>
+          <span class="state">резерв</span>
+        </div>
+      </main>
+
+      <footer class="status-rail">
+        <span>sync: local-only</span>
+        <span>load: 63%</span>
+        <span>line: stable</span>
+        <span>upd: 19:42:08</span>
+      </footer>
+    </article>
+  </body>
+</html>

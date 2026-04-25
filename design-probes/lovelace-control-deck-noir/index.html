@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lovelace Control Deck Noir</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="frame">
+      <header class="topbar">
+        <div class="topbar__timeblock">
+          <div class="topbar__time">18:42</div>
+          <div class="topbar__day">четверг, 9 апреля</div>
+        </div>
+
+        <div class="topbar__controls">
+          <div class="topbar__badge">live</div>
+          <button class="topbar__button" type="button">sync</button>
+          <button class="topbar__button topbar__button--accent" type="button">режим</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="hero-panel">
+          <div class="hero-panel__eyebrow">активный контур</div>
+          <div class="hero-panel__title">Печать и разбор заявок</div>
+          <div class="hero-panel__meta">
+            <span>19:00-20:00</span>
+            <span>операционный слот</span>
+          </div>
+          <div class="hero-panel__timer">
+            <span>00</span>
+            <span class="hero-panel__sep">:</span>
+            <span>17</span>
+            <span class="hero-panel__sep">:</span>
+            <span>26</span>
+          </div>
+          <div class="hero-panel__footer">
+            <span>до конца окна</span>
+            <span class="hero-panel__signal">статус: в работе</span>
+          </div>
+        </section>
+
+        <section class="strip strip--blue">
+          <div class="strip__label">день</div>
+          <div class="strip__value">Фокус-день, ручной обзор без Google sync</div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <div>
+              <div class="panel__label">стек задач</div>
+              <h2 class="panel__title">Операционный список</h2>
+            </div>
+            <div class="panel__count">5</div>
+          </div>
+
+          <ul class="task-list">
+            <li class="task-row task-row--active">
+              <div class="task-row__slot">18:30-19:00</div>
+              <div class="task-row__body">
+                <div class="task-row__title">Подготовить пакет документов</div>
+                <div class="task-row__meta">локальная задача | высокий приоритет</div>
+              </div>
+              <div class="task-row__status">active</div>
+            </li>
+
+            <li class="task-row">
+              <div class="task-row__slot">19:00-19:30</div>
+              <div class="task-row__body">
+                <div class="task-row__title">Проверка тендеров</div>
+                <div class="task-row__meta">google mode | рабочий слот</div>
+              </div>
+              <div class="task-row__status">queue</div>
+            </li>
+
+            <li class="task-row task-row--muted">
+              <div class="task-row__slot">19:30-20:00</div>
+              <div class="task-row__body">
+                <div class="task-row__title">Написать отчёт по дню</div>
+                <div class="task-row__meta">ручная фиксация | черновик</div>
+              </div>
+              <div class="task-row__status">draft</div>
+            </li>
+
+            <li class="task-row task-row--done">
+              <div class="task-row__slot">17:30-18:00</div>
+              <div class="task-row__body">
+                <div class="task-row__title">Сверить входящие платежи</div>
+                <div class="task-row__meta">закрыто | локальная задача</div>
+              </div>
+              <div class="task-row__status">done</div>
+            </li>
+
+            <li class="task-row">
+              <div class="task-row__slot">20:00-20:30</div>
+              <div class="task-row__body">
+                <div class="task-row__title">Разобрать голосовые заметки</div>
+                <div class="task-row__meta">без слота | вечерний хвост</div>
+              </div>
+              <div class="task-row__status">hold</div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel panel--command">
+          <div class="panel__head panel__head--compact">
+            <div>
+              <div class="panel__label">ввод</div>
+              <h2 class="panel__title">Новая задача</h2>
+            </div>
+          </div>
+
+          <div class="composer">
+            <div class="composer__input">Добавить задачу в слот 20:30-21:00</div>
+            <button class="composer__button" type="button">создать</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="statusbar">
+        <span class="statusbar__left">контур: desktop v2 / control deck noir</span>
+        <span class="statusbar__right">локально | offline-safe</span>
+      </footer>
+    </div>
+  </body>
+</html>

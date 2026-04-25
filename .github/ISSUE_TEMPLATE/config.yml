@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Manager workflow note"
+    url: "https://github.com/k4raga/schedule-widget/blob/main/AGENT-LOOP.md"
+    about: "Check manager/developer/QA workflow expectations before opening new cycles."

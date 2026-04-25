@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hypatia Rational System Mockup</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="widget">
+      <header class="topbar">
+        <div class="topbar__time">
+          <div class="topbar__clock">18:42</div>
+          <div class="topbar__caption">четверг, 9 апреля</div>
+        </div>
+
+        <div class="topbar__controls">
+          <button class="chip chip--ghost" type="button">Сегодня</button>
+          <button class="icon-button" type="button" aria-label="Обновить">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18.8 10a7 7 0 1 0 .2 4h-2.1a5 5 0 1 1-1.2-4.7L13 12h7V5z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero__meta">Фокус дня</div>
+        <h1 class="hero__title">Переоформить вычет и закрыть два рабочих блока</h1>
+        <div class="hero__footer">
+          <span class="badge badge--blue">5 задач</span>
+          <span class="badge badge--green">2 в фокусе</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2>Сегодня</h2>
+          <span class="section__hint">Плотный вид</span>
+        </div>
+
+        <ul class="task-list">
+          <li class="task-card task-card--active">
+            <div class="task-card__time">09:30 - 10:00</div>
+            <div class="task-card__body">
+              <div class="task-card__title">Печать</div>
+              <div class="task-card__meta">Навык · повторяющаяся</div>
+            </div>
+            <div class="task-card__state">Сейчас</div>
+          </li>
+
+          <li class="task-card">
+            <div class="task-card__time">10:00 - 11:00</div>
+            <div class="task-card__body">
+              <div class="task-card__title">Разобрать письма и тендеры</div>
+              <div class="task-card__meta">Рабочий слот</div>
+            </div>
+            <div class="task-card__state task-card__state--muted">Далее</div>
+          </li>
+
+          <li class="task-card">
+            <div class="task-card__time">11:30 - 12:00</div>
+            <div class="task-card__body">
+              <div class="task-card__title">Созвон по макету</div>
+              <div class="task-card__meta">Google sync</div>
+            </div>
+            <div class="task-card__state">12м</div>
+          </li>
+
+          <li class="task-card task-card--done">
+            <div class="task-card__time">13:00 - 14:00</div>
+            <div class="task-card__body">
+              <div class="task-card__title">Подготовить отчёт</div>
+              <div class="task-card__meta">Локальная задача</div>
+            </div>
+            <div class="task-card__state task-card__state--done">Готово</div>
+          </li>
+
+          <li class="task-card">
+            <div class="task-card__time">18:00 - 19:00</div>
+            <div class="task-card__body">
+              <div class="task-card__title">Стрим и заметки по итогам дня</div>
+              <div class="task-card__meta">Вечерний блок</div>
+            </div>
+            <div class="task-card__state task-card__state--muted">Потом</div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="composer">
+        <div class="composer__label">Быстро добавить</div>
+        <div class="composer__row">
+          <div class="composer__input">Новая задача на выбранную дату</div>
+          <button class="chip chip--accent" type="button">Добавить</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

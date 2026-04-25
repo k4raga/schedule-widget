@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Midnight Console Probe</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="probe-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-mark"></span>
+          <div class="brand-copy">
+            <span class="brand-title">Расписание</span>
+            <span class="brand-subtitle">операционный виджет</span>
+          </div>
+        </div>
+
+        <div class="topbar-meta">
+          <span class="clock">17:24</span>
+          <span class="date-chip">чт, 09 апреля</span>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="focus-card">
+          <div class="card-label">Сейчас</div>
+          <h1>Подготовить ответ клиенту</h1>
+          <div class="focus-meta">
+            <span>17:00-17:45</span>
+            <span>осталось 21 мин</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill"></div>
+          </div>
+        </section>
+
+        <section class="queue-card">
+          <div class="section-head">
+            <span class="section-title">Лента дня</span>
+            <span class="count-chip">5</span>
+          </div>
+
+          <ul class="task-list">
+            <li class="task-row is-done">
+              <span class="task-time">13:00</span>
+              <div class="task-copy">
+                <strong>Разбор входящих</strong>
+                <span>done</span>
+              </div>
+            </li>
+            <li class="task-row is-active">
+              <span class="task-time">17:00</span>
+              <div class="task-copy">
+                <strong>Подготовить ответ клиенту</strong>
+                <span>в фокусе</span>
+              </div>
+            </li>
+            <li class="task-row">
+              <span class="task-time">18:00</span>
+              <div class="task-copy">
+                <strong>Созвон по синку</strong>
+                <span>work / 30 мин</span>
+              </div>
+            </li>
+            <li class="task-row">
+              <span class="task-time">19:00</span>
+              <div class="task-copy">
+                <strong>Тихий слот на код</strong>
+                <span>deep / 60 мин</span>
+              </div>
+            </li>
+            <li class="task-row is-muted">
+              <span class="task-time">21:30</span>
+              <div class="task-copy">
+                <strong>Итоги дня</strong>
+                <span>личное / 20 мин</span>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="capture-card">
+          <div class="card-label">Быстрый ввод</div>
+          <div class="capture-input">+ Добавить задачу в выбранный день</div>
+          <div class="capture-actions">
+            <span class="action-chip">Новая</span>
+            <span class="action-chip is-secondary">Фокус</span>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span class="status">sync: local only</span>
+        <span class="status">режим: compact</span>
+      </footer>
+    </div>
+  </body>
+</html>

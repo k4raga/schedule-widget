@@ -1,0 +1,13 @@
+{
+  "selectedDate": "2026-04-09",
+  "initialTasks": [
+    {
+      "id": "seed-welcome-task",
+      "date": "2026-04-09",
+      "title": "Welcome to schedule-widget v2 MVP",
+      "status": "todo",
+      "createdAt": "2026-04-09T00:00:00.000Z",
+      "updatedAt": "2026-04-09T00:00:00.000Z"
+    }
+  ]
+}

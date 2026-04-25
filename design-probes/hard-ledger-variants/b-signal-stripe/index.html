@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hard Ledger Variant · Signal Stripe</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="widget" aria-label="Signal Stripe">
+      <header class="topbar">
+        <div class="clock-panel">
+          <span class="clock">16:10</span>
+          <span class="sync-state">канал: стабильно</span>
+        </div>
+        <div class="day-panel">
+          <span class="kicker">оперативный день</span>
+          <span class="date">чт, 9 апреля</span>
+        </div>
+        <button class="sync-btn" type="button">синхр</button>
+      </header>
+
+      <main class="layout">
+        <section class="focus-card">
+          <div class="stripe stripe-hot" aria-hidden="true"></div>
+          <div class="focus-content">
+            <span class="kicker">сигнал фокуса</span>
+            <h1>Подготовить пакет на согласование</h1>
+            <p>16:00-17:00 · запас 22 мин</p>
+          </div>
+        </section>
+
+        <section class="task-board" aria-label="Список задач">
+          <article class="task task-done">
+            <span class="line-mark" aria-hidden="true"></span>
+            <span class="time">09:30-10:00</span>
+            <span class="title">Разбор входящих поручений</span>
+            <span class="state">выполнено</span>
+          </article>
+
+          <article class="task task-live">
+            <span class="line-mark" aria-hidden="true"></span>
+            <span class="time">10:00-11:00</span>
+            <span class="title">Сверка лимитов по заявкам</span>
+            <span class="state">в работе</span>
+          </article>
+
+          <article class="task task-risk">
+            <span class="line-mark" aria-hidden="true"></span>
+            <span class="time">11:00-12:30</span>
+            <span class="title">Созвон с поставщиком API</span>
+            <span class="state">риск</span>
+          </article>
+
+          <article class="task task-queue">
+            <span class="line-mark" aria-hidden="true"></span>
+            <span class="time">13:00-14:00</span>
+            <span class="title">Черновик отчёта по спринту</span>
+            <span class="state">ожидание</span>
+          </article>
+
+          <article class="task task-queue">
+            <span class="line-mark" aria-hidden="true"></span>
+            <span class="time">18:00-18:30</span>
+            <span class="title">Финальная проверка выгрузки</span>
+            <span class="state">очередь</span>
+          </article>
+        </section>
+      </main>
+
+      <footer class="statusline">
+        <span class="status-label">статус ленты</span>
+        <span class="status-value">2 сигнала внимания · обновлено 16:10</span>
+      </footer>
+    </div>
+  </body>
+</html>

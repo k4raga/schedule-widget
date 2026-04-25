@@ -1,0 +1,48 @@
+name: "Feature Slice"
+description: "Define a bounded v2 implementation slice."
+title: "[Slice] "
+labels: ["type:feature"]
+body:
+  - type: input
+    id: slice
+    attributes:
+      label: Slice name
+      placeholder: Slice 1 - Day View Core
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What user or system capability are we adding?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Owned scope
+      description: Bounded modules/files for this slice.
+      placeholder: packages/domain/*, apps/desktop/*
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: Explicitly list what this slice will not do.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Exact pass conditions for manager and QA.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification scenarios
+      description: Required developer and QA scenario checks.
+    validations:
+      required: true

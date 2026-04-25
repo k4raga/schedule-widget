@@ -1,0 +1,48 @@
+name: "Bug / Regression"
+description: "Report a broken behavior or regression in schedule-widget."
+title: "[Bug] "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: Briefly describe the failure.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Provide exact steps and date/context if relevant.
+      placeholder: |
+        1. Open date...
+        2. Click...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: surface
+    attributes:
+      label: Surface / files (if known)
+      placeholder: widget-app.js, main.js, sync popup, etc.
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk and impact
+      placeholder: Who is affected and how severe is it?
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define the pass condition for the fix.
+    validations:
+      required: true
