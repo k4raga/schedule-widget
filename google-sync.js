@@ -8,6 +8,8 @@ const GOOGLE_CALENDAR_APP_ID = "connector_947e0d954944416db111db556030eea6";
 const GOOGLE_CALENDAR_APP_PATH = `app://${GOOGLE_CALENDAR_APP_ID}`;
 const GOOGLE_CALENDAR_MODEL = "gpt-5.4-mini";
 const GOOGLE_CALENDAR_READ_TIMEOUT_MS = 120000;
+let cachedCodexSourcePath = "";
+let cachedRunnableCodexBinary = "";
 const GOOGLE_CALENDAR_IDS = {
   primary: "primary",
   work: "3def21724634cc82d171f8c8028fb088f842e2b4cc8f9aa524ad3b2b09d5ad9a@group.calendar.google.com",
@@ -426,17 +428,26 @@ function collectKnownCodexInstallPaths() {
 }
 
 function resolveCodexSourcePath() {
+  if (cachedCodexSourcePath && isResolvableCodexPath(cachedCodexSourcePath)) {
+    return cachedCodexSourcePath;
+  }
+
   const explicit = normalizeCandidatePath(process.env[CODEX_PATH_ENV]);
-  const candidates = uniquePaths([
-    explicit,
-    ...collectCodexCandidatesFromPathEnv(),
-    ...collectCodexCandidatesFromWhere(),
-    ...collectCodexCandidatesFromPowerShell(),
-    ...collectKnownCodexInstallPaths(),
-  ]);
-  const resolved = candidates.find(isResolvableCodexPath);
-  if (resolved) {
-    return resolved;
+  const candidateGroups = [
+    [explicit],
+    collectCodexCandidatesFromPathEnv,
+    collectKnownCodexInstallPaths,
+    collectCodexCandidatesFromWhere,
+    collectCodexCandidatesFromPowerShell,
+  ];
+
+  for (const group of candidateGroups) {
+    const candidates = uniquePaths(typeof group === "function" ? group() : group);
+    const resolved = candidates.find(isResolvableCodexPath);
+    if (resolved) {
+      cachedCodexSourcePath = resolved;
+      return resolved;
+    }
   }
 
   const note = explicit
@@ -448,17 +459,24 @@ function resolveCodexSourcePath() {
 }
 
 function resolveRunnableCodexBinary() {
+  if (cachedRunnableCodexBinary && fs.existsSync(cachedRunnableCodexBinary)) {
+    return cachedRunnableCodexBinary;
+  }
+
   const sourcePath = resolveCodexSourcePath();
   const targetPath = path.join(os.tmpdir(), "watson-desk-codex-app-server.exe");
 
   try {
-    fs.copyFileSync(sourcePath, targetPath);
+    if (!fs.existsSync(targetPath)) {
+      fs.copyFileSync(sourcePath, targetPath);
+    }
   } catch (error) {
     if (!fs.existsSync(targetPath)) {
       throw error;
     }
   }
 
+  cachedRunnableCodexBinary = targetPath;
   return targetPath;
 }
 

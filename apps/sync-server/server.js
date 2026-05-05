@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
+const readline = require("node:readline");
 
 const DEFAULT_PORT = 3199;
 const DEFAULT_DATA_DIR = path.join(process.cwd(), "data", "sync-server");
@@ -63,21 +64,44 @@ function readOperations(dataDir) {
     .map((line) => JSON.parse(line));
 }
 
-function appendOperations(dataDir, operations) {
+async function readOperationIds(dataDir) {
+  const filePath = operationLogPath(dataDir);
+  if (!fs.existsSync(filePath)) {
+    return new Set();
+  }
+
+  const ids = new Set();
+  const lines = readline.createInterface({
+    crlfDelay: Infinity,
+    input: fs.createReadStream(filePath, { encoding: "utf8" }),
+  });
+
+  for await (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      continue;
+    }
+    ids.add(JSON.parse(trimmed).id);
+  }
+
+  return ids;
+}
+
+async function appendOperations(dataDir, operations) {
   if (!operations.length) {
     return 0;
   }
 
   ensureDataDir(dataDir);
   const filePath = operationLogPath(dataDir);
-  const existingIds = new Set(readOperations(dataDir).map((operation) => operation.id));
+  const existingIds = await readOperationIds(dataDir);
   const unique = operations.filter((operation) => !existingIds.has(operation.id));
   if (!unique.length) {
     return 0;
   }
 
   const payload = unique.map((operation) => `${JSON.stringify(operation)}\n`).join("");
-  fs.appendFileSync(filePath, payload, "utf8");
+  await fs.promises.appendFile(filePath, payload, "utf8");
   return unique.length;
 }
 
@@ -145,7 +169,7 @@ function createSyncServer(options = {}) {
       if (request.method === "POST" && url.pathname === "/api/sync/push") {
         const body = await readJsonBody(request);
         const operations = Array.isArray(body.operations) ? body.operations.map(normalizeOperation) : [];
-        const acceptedCount = appendOperations(dataDir, operations);
+        const acceptedCount = await appendOperations(dataDir, operations);
         writeJson(response, 200, { ok: true, acceptedCount });
         return;
       }

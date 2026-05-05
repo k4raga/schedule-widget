@@ -56,11 +56,11 @@ async function run() {
     });
     await backend.setTaskStatus({ id: doneTemporaryNote.id, status: "done" });
 
-    const carrySourceTasks = await backend.listTasksForDate({ date: "2026-05-04" });
-    const carried = carrySourceTasks
-      .filter((task) => task.scope === "week")
-      .filter((task) => task.startTime >= "00:04")
-      .filter((task) => task.status !== "done");
+    const carried = await backend.listCarryoverNotes({
+      date: "2026-05-05",
+      minStartTime: "00:04",
+      lookbackDays: 14,
+    });
 
     assert.equal(carried.length, 1);
     assert.equal(carried[0].id, openTemporaryNote.id);

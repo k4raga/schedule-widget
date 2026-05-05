@@ -6,6 +6,7 @@ const { fetchGoogleCalendarScheduleReadOnly } = require("../../google-sync");
 
 const {
   ContractValidationError,
+  assertIsoDate,
   normalizeCreateRecurringTaskSeriesCommand,
   normalizeCreateTaskCommand,
   normalizeDeleteTaskCommand,
@@ -20,6 +21,7 @@ const {
 } = require("../storage-sqlite");
 
 const DEFAULT_SEED_PATH = path.join(process.cwd(), "tests", "fixtures", "v2-mvp-seed.json");
+const DEFAULT_CARRYOVER_LOOKBACK_DAYS = 14;
 
 function nowIso() {
   return new Date().toISOString();
@@ -27,6 +29,29 @@ function nowIso() {
 
 function syncOperationId(clientId) {
   return `${clientId}:${Date.now()}:${randomUUID()}`;
+}
+
+function shiftDateKey(date, offsetDays) {
+  const shifted = new Date(`${date}T00:00:00.000Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + offsetDays);
+  return shifted.toISOString().slice(0, 10);
+}
+
+function normalizeCarryoverNotesRequest(input = {}) {
+  const date = assertIsoDate(input.date, "date");
+  const lookbackDays = Number.isInteger(input.lookbackDays)
+    ? input.lookbackDays
+    : Number.parseInt(String(input.lookbackDays || DEFAULT_CARRYOVER_LOOKBACK_DAYS), 10);
+  const boundedLookbackDays = Math.min(Math.max(lookbackDays || DEFAULT_CARRYOVER_LOOKBACK_DAYS, 1), 62);
+  const minStartTime =
+    typeof input.minStartTime === "string" && /^\d{2}:\d{2}$/.test(input.minStartTime)
+      ? input.minStartTime
+      : "00:00";
+  return {
+    date,
+    sinceDate: shiftDateKey(date, -boundedLookbackDays),
+    minStartTime,
+  };
 }
 
 const IGNORED_GOOGLE_EVENT_TITLES = new Set([
@@ -59,6 +84,13 @@ async function createV2MvpBackend(options = {}) {
     typeof options.googleReadSyncAdapter === "function"
       ? options.googleReadSyncAdapter
       : fetchGoogleCalendarScheduleReadOnly;
+
+  function writeBatch(work) {
+    if (typeof storage.deferPersistence === "function") {
+      return storage.deferPersistence(work);
+    }
+    return work();
+  }
 
   function getSyncClientId() {
     const existing = String(storage.getSettingValue("sync_client_id") || "").trim();
@@ -101,9 +133,9 @@ async function createV2MvpBackend(options = {}) {
 
     const timestamp = nowIso();
     const operatedEntityIds = new Set(
-      storage.listAllSyncOperations()
-        .map((operation) => operation?.entityId)
-        .filter(Boolean)
+      typeof storage.listSyncOperationEntityIds === "function"
+        ? storage.listSyncOperationEntityIds()
+        : storage.listAllSyncOperations().map((operation) => operation?.entityId).filter(Boolean)
     );
     const tasks = storage.listAllTasks()
       .filter((task) => !operatedEntityIds.has(task.id));
@@ -141,6 +173,15 @@ async function createV2MvpBackend(options = {}) {
       return storage.listTasksByDate(date);
     },
 
+    async listCarryoverNotes(input = {}) {
+      const request = normalizeCarryoverNotesRequest(input);
+      return storage.listCarryoverWeekTasks({
+        beforeDate: request.date,
+        sinceDate: request.sinceDate,
+        minStartTime: request.minStartTime,
+      });
+    },
+
     async createTask(input = {}) {
       const fallbackDate = storage.getSelectedDate() || todayDateKey();
       const command = normalizeCreateTaskCommand(input, fallbackDate);
@@ -158,9 +199,11 @@ async function createV2MvpBackend(options = {}) {
         updatedAt: timestamp,
       };
 
-      storage.createTask(task);
-      recordTaskUpsert(task, timestamp);
-      storage.setSelectedDate(task.date);
+      writeBatch(() => {
+        storage.createTask(task);
+        recordTaskUpsert(task, timestamp);
+        storage.setSelectedDate(task.date);
+      });
       return task;
     },
 
@@ -193,9 +236,11 @@ async function createV2MvpBackend(options = {}) {
         });
       });
 
-      storage.createTasks(createdTasks);
-      createdTasks.forEach((task) => recordTaskUpsert(task, timestamp));
-      storage.setSelectedDate(command.anchorDate);
+      writeBatch(() => {
+        storage.createTasks(createdTasks);
+        createdTasks.forEach((task) => recordTaskUpsert(task, timestamp));
+        storage.setSelectedDate(command.anchorDate);
+      });
       return {
         anchorDate: command.anchorDate,
         createdCount: createdTasks.length,
@@ -223,9 +268,11 @@ async function createV2MvpBackend(options = {}) {
         updatedAt: nowIso(),
       };
 
-      storage.updateTask(updatedTask);
-      recordTaskUpsert(updatedTask);
-      storage.setSelectedDate(updatedTask.date);
+      writeBatch(() => {
+        storage.updateTask(updatedTask);
+        recordTaskUpsert(updatedTask);
+        storage.setSelectedDate(updatedTask.date);
+      });
       return updatedTask;
     },
 
@@ -236,9 +283,11 @@ async function createV2MvpBackend(options = {}) {
         throw new ContractValidationError("task does not exist", "id");
       }
 
-      storage.deleteTask(command.id);
-      recordTaskDelete(command.id);
-      storage.setSelectedDate(existing.date);
+      writeBatch(() => {
+        storage.deleteTask(command.id);
+        recordTaskDelete(command.id);
+        storage.setSelectedDate(existing.date);
+      });
       return { id: command.id, deleted: true };
     },
 
@@ -250,13 +299,15 @@ async function createV2MvpBackend(options = {}) {
       }
 
       const updatedAt = nowIso();
-      storage.setTaskStatus(command.id, command.status, updatedAt);
-      recordTaskUpsert({
-        ...existing,
-        status: command.status,
-        updatedAt,
+      writeBatch(() => {
+        storage.setTaskStatus(command.id, command.status, updatedAt);
+        recordTaskUpsert({
+          ...existing,
+          status: command.status,
+          updatedAt,
+        });
+        storage.setSelectedDate(existing.date);
       });
-      storage.setSelectedDate(existing.date);
       return {
         ...existing,
         status: command.status,
@@ -316,7 +367,7 @@ async function createV2MvpBackend(options = {}) {
       }
 
       const clientId = getSyncClientId();
-      const bootstrappedCount = ensureSyncBootstrapOperations();
+      const bootstrappedCount = writeBatch(() => ensureSyncBootstrapOperations());
       const pending = storage.listPendingSyncOperations();
       const headers = {
         "authorization": `Bearer ${token}`,
@@ -328,23 +379,29 @@ async function createV2MvpBackend(options = {}) {
         headers,
         body: JSON.stringify({ clientId, operations: pending }),
       });
-      storage.markSyncOperationsPushed(pending.map((operation) => operation.id), nowIso());
+      writeBatch(() => {
+        storage.markSyncOperationsPushed(pending.map((operation) => operation.id), nowIso());
+      });
 
       const pulled = await requestJson(`${serverUrl}/api/sync/operations`, {
         method: "GET",
         headers,
       });
 
-      let appliedCount = 0;
       const operations = Array.isArray(pulled.operations) ? pulled.operations : [];
-      operations.forEach((operation) => {
-        if (operation?.clientId === clientId) {
-          storage.markSyncOperationApplied(operation.id, nowIso());
-          return;
-        }
-        if (storage.applySyncOperation(operation, nowIso())) {
-          appliedCount += 1;
-        }
+      const appliedCount = writeBatch(() => {
+        let count = 0;
+        const appliedAt = nowIso();
+        operations.forEach((operation) => {
+          if (operation?.clientId === clientId) {
+            storage.markSyncOperationApplied(operation.id, appliedAt);
+            return;
+          }
+          if (storage.applySyncOperation(operation, appliedAt)) {
+            count += 1;
+          }
+        });
+        return count;
       });
 
       return {

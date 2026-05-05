@@ -65,6 +65,7 @@
   let loadedTasks = [];
   let loadedWeeklyTasks = [];
   let currentContext = null;
+  let activeLoadId = 0;
   let focusTimerState = null;
   let lastLiveMinuteKey = null;
   let composerState = null;
@@ -149,10 +150,6 @@
 
   function sortWeeklyTasks(tasks) {
     return helpers.sortWeeklyTasks ? helpers.sortWeeklyTasks(tasks, NOTE_SLOT_LIMIT) : [];
-  }
-
-  function previousDateKeys(dateKey, count) {
-    return Array.from({ length: count }, (_item, index) => shiftDateKey(dateKey, -(index + 1)));
   }
 
   function carriedTemporaryNotes(tasks) {
@@ -1298,6 +1295,8 @@
   }
 
   async function loadDate(dateKey) {
+    const loadId = activeLoadId + 1;
+    activeLoadId = loadId;
     closeCalendarPopover();
     if (!api) {
       setStatus("СБОЙ МОСТА", "error");
@@ -1306,14 +1305,20 @@
 
     setStatus("ЧТЕНИЕ...", "busy");
     try {
-      const carryDates = previousDateKeys(dateKey, NOTE_CARRYOVER_LOOKBACK_DAYS);
-      const [context, listResponse, ...carryResponses] = await Promise.all([
+      const [context, listResponse, carryResponse] = await Promise.all([
         api.getDayContext(dateKey),
         api.listTasks(dateKey),
-        ...carryDates.map((carryDate) => api.listTasks(carryDate)),
+        api.listCarryoverNotes({
+          dateKey,
+          lookbackDays: NOTE_CARRYOVER_LOOKBACK_DAYS,
+          minStartTime: weeklySlotRange(TEMP_NOTE_START_SLOT).startTime,
+        }),
       ]);
+      if (loadId !== activeLoadId) {
+        return;
+      }
       const tasks = parseTaskListResponse(listResponse);
-      const carryTasks = carryResponses.flatMap(parseTaskListResponse);
+      const carryTasks = parseTaskListResponse(carryResponse);
       currentContext = context || null;
       loadedTasks = tasks.filter((task) => taskScope(task) === "day");
       loadedWeeklyTasks = sortWeeklyTasks([
@@ -1327,6 +1332,9 @@
       lastLiveMinuteKey = currentMinuteKey();
       setStatus("ГОТОВО", "success");
     } catch (error) {
+      if (loadId !== activeLoadId) {
+        return;
+      }
       loadedTasks = [];
       loadedWeeklyTasks = [];
       currentContext = null;
@@ -1961,30 +1969,51 @@
     setStatus(states[label] || label, "busy");
   }
 
+  const cleanupCallbacks = [];
+
+  function listen(target, type, handler) {
+    if (!target) {
+      return;
+    }
+    target.addEventListener(type, handler);
+    cleanupCallbacks.push(() => target.removeEventListener(type, handler));
+  }
+
+  function every(ms, handler) {
+    const timerId = setInterval(handler, ms);
+    cleanupCallbacks.push(() => clearInterval(timerId));
+  }
+
+  window.addEventListener("beforeunload", () => {
+    while (cleanupCallbacks.length) {
+      cleanupCallbacks.pop()();
+    }
+  }, { once: true });
+
   updateClock();
   syncCalendarViewToSelected();
   setDateUI(selectedDateKey);
 
-  dom.syncButton.addEventListener("click", runSyncSelectedDayGuarded);
-  dom.dbSyncButton?.addEventListener("click", runDatabaseSyncGuarded);
-  dom.dockButton?.addEventListener("click", dockWindowLeft);
-  dom.prevDayButton.addEventListener("click", () => handleDateShift(-1));
-  dom.nextDayButton.addEventListener("click", () => handleDateShift(1));
-  dom.dateButton.addEventListener("click", openDatePicker);
-  dom.datePopover?.addEventListener("click", handleCalendarClick);
-  dom.dateInput.addEventListener("change", () => {
+  listen(dom.syncButton, "click", runSyncSelectedDayGuarded);
+  listen(dom.dbSyncButton, "click", runDatabaseSyncGuarded);
+  listen(dom.dockButton, "click", dockWindowLeft);
+  listen(dom.prevDayButton, "click", () => handleDateShift(-1));
+  listen(dom.nextDayButton, "click", () => handleDateShift(1));
+  listen(dom.dateButton, "click", openDatePicker);
+  listen(dom.datePopover, "click", handleCalendarClick);
+  listen(dom.dateInput, "change", () => {
     if (dom.dateInput.value) {
       loadDate(dom.dateInput.value);
     }
   });
-  dom.content.addEventListener("click", handleContentClick);
-  dom.content.addEventListener("input", handleContentInput);
-  dom.content.addEventListener("change", handleContentChange);
-  dom.content.addEventListener("keydown", handleContentKeydown);
-  document.addEventListener("click", handleDocumentClick);
-  document.addEventListener("keydown", handleGlobalKeydown);
+  listen(dom.content, "click", handleContentClick);
+  listen(dom.content, "input", handleContentInput);
+  listen(dom.content, "change", handleContentChange);
+  listen(dom.content, "keydown", handleContentKeydown);
+  listen(document, "click", handleDocumentClick);
+  listen(document, "keydown", handleGlobalKeydown);
 
-  setInterval(() => {
+  every(1000, () => {
     updateClock();
     updateFocusTimer();
     if (selectedDateKey && isToday(selectedDateKey)) {
@@ -1994,7 +2023,7 @@
         renderDay();
       }
     }
-  }, 1000);
+  });
 
   loadDate(selectedDateKey);
 })();

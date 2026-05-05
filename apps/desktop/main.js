@@ -1,102 +1,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { execFileSync } = require("node:child_process");
 const { app, BrowserWindow, ipcMain, screen } = require("electron");
 const { createV2MvpBackend } = require("../../packages/backend");
 
 let backend = null;
-const CODEX_PATH_ENV = "WATSON_DESK_CODEX_PATH";
-
-function collectCodexCandidates() {
-  const localAppData = String(process.env.LOCALAPPDATA || "").trim();
-  const appData = String(process.env.APPDATA || "").trim();
-  const programFiles = String(process.env.ProgramFiles || "").trim();
-  const candidates = [
-    localAppData ? path.join(localAppData, "OpenAI", "Codex", "bin", "codex.exe") : "",
-    localAppData ? path.join(localAppData, "Microsoft", "WindowsApps", "codex.exe") : "",
-    appData ? path.join(appData, "npm", "codex.cmd") : "",
-  ].filter(Boolean);
-
-  for (const command of ["codex", "codex.exe"]) {
-    try {
-      const output = execFileSync("where.exe", [command], {
-        encoding: "utf8",
-        windowsHide: true,
-      });
-      output
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .forEach((line) => candidates.push(line));
-    } catch (error) {
-    }
-  }
-
-  for (const command of ["codex", "codex.exe"]) {
-    try {
-      const output = execFileSync(
-        "powershell.exe",
-        ["-NoProfile", "-Command", `(Get-Command ${command} -ErrorAction Stop).Source`],
-        {
-          encoding: "utf8",
-          windowsHide: true,
-        },
-      );
-      output
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .forEach((line) => candidates.push(line));
-    } catch (error) {
-    }
-  }
-
-  if (process.platform === "win32" && programFiles) {
-    try {
-      fs.readdirSync(path.join(programFiles, "WindowsApps"), { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && entry.name.startsWith("OpenAI.Codex_"))
-        .sort((left, right) => right.name.localeCompare(left.name))
-        .forEach((entry) => {
-          candidates.push(path.join(programFiles, "WindowsApps", entry.name, "app", "resources", "codex.exe"));
-        });
-    } catch (error) {
-    }
-  }
-
-  return [...new Set(candidates)];
-}
-
-function ensureCodexPathEnv() {
-  const explicit = String(process.env[CODEX_PATH_ENV] || "").trim();
-  const candidates = [...new Set([
-    ...collectCodexCandidates(),
-    explicit,
-  ].filter(Boolean))];
-  const resolved = candidates
-    .filter((candidate) => {
-      try {
-        return fs.existsSync(candidate);
-      } catch (error) {
-        return false;
-      }
-    })
-    .sort((left, right) => {
-      const leftExe = left.toLowerCase().endsWith(".exe") ? 1 : 0;
-      const rightExe = right.toLowerCase().endsWith(".exe") ? 1 : 0;
-      if (leftExe !== rightExe) {
-        return rightExe - leftExe;
-      }
-      return 0;
-    })[0];
-
-  if (resolved) {
-    process.env[CODEX_PATH_ENV] = resolved;
-    return resolved;
-  }
-
-  delete process.env[CODEX_PATH_ENV];
-  return "";
-}
 
 function getSeedPath() {
   return path.resolve(__dirname, "..", "..", "tests", "fixtures", "v2-mvp-seed.json");
@@ -156,6 +63,16 @@ function registerIpcHandlers() {
   ipcMain.handle("v2:tasks:list", async (_event, payload = {}) => {
     const service = await ensureBackend();
     const tasks = await service.listTasksForDate({ date: payload.dateKey });
+    return { tasks };
+  });
+
+  ipcMain.handle("v2:notes:carryover", async (_event, payload = {}) => {
+    const service = await ensureBackend();
+    const tasks = await service.listCarryoverNotes({
+      date: payload.dateKey,
+      minStartTime: payload.minStartTime,
+      lookbackDays: payload.lookbackDays,
+    });
     return { tasks };
   });
 
@@ -254,8 +171,17 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      devTools: process.env.WATSON_DESK_V2_DEVTOOLS === "1",
       preload: path.join(__dirname, "preload.js"),
     },
+  });
+
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("will-navigate", (event, targetUrl) => {
+    if (targetUrl !== win.webContents.getURL()) {
+      event.preventDefault();
+    }
   });
 
   win.loadFile(path.join(__dirname, "index.html"));
@@ -265,12 +191,10 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   if (process.platform === "win32") {
     app.setAppUserModelId("com.k4raga.watson-desk");
   }
-  ensureCodexPathEnv();
-  await ensureBackend();
   registerIpcHandlers();
   createWindow();
 

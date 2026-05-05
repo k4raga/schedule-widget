@@ -96,6 +96,8 @@ class SqliteMvpStorage {
     this.SQL = sqlModule;
     this.dbPath = options.dbPath || DEFAULT_DB_PATH;
     this.seed = normalizeSeed(options.seedData || readMvpSeedFile(options.seedPath));
+    this.persistDepth = 0;
+    this.persistDirty = false;
 
     ensureDirectory(this.dbPath);
 
@@ -124,6 +126,8 @@ class SqliteMvpStorage {
       );
       CREATE INDEX IF NOT EXISTS tasks_date_created_idx
       ON tasks(date, created_at);
+      CREATE INDEX IF NOT EXISTS tasks_carryover_idx
+      ON tasks(scope, status, date, start_time);
       CREATE TABLE IF NOT EXISTS external_events (
         id TEXT PRIMARY KEY,
         date TEXT NOT NULL,
@@ -201,8 +205,35 @@ class SqliteMvpStorage {
   }
 
   persist() {
+    if (this.persistDepth > 0) {
+      this.persistDirty = true;
+      return;
+    }
+
     const exported = this.db.export();
-    fs.writeFileSync(this.dbPath, Buffer.from(exported));
+    fs.writeFileSync(this.dbPath, exported);
+  }
+
+  deferPersistence(work) {
+    this.persistDepth += 1;
+    try {
+      return work();
+    } finally {
+      this.persistDepth -= 1;
+      if (this.persistDepth === 0 && this.persistDirty) {
+        this.flushDeferredPersistence();
+      }
+    }
+  }
+
+  flushDeferredPersistence() {
+    this.persistDirty = false;
+    try {
+      this.persist();
+    } catch (error) {
+      this.persistDirty = true;
+      throw error;
+    }
   }
 
   getSelectedDate() {
@@ -245,6 +276,30 @@ class SqliteMvpStorage {
 
     try {
       statement.bind([date]);
+      const rows = [];
+      while (statement.step()) {
+        rows.push(rowToTask(statement.getAsObject()));
+      }
+      return rows;
+    } finally {
+      statement.free();
+    }
+  }
+
+  listCarryoverWeekTasks({ beforeDate, sinceDate, minStartTime }) {
+    const statement = this.db.prepare(`
+      SELECT id, date, title, status, start_time, end_time, scope, created_at, updated_at
+      FROM tasks
+      WHERE scope = 'week'
+        AND status != 'done'
+        AND date < ?
+        AND date >= ?
+        AND start_time >= ?
+      ORDER BY date DESC, start_time ASC, created_at ASC, id ASC
+    `);
+
+    try {
+      statement.bind([beforeDate, sinceDate, minStartTime || "00:00"]);
       const rows = [];
       while (statement.step()) {
         rows.push(rowToTask(statement.getAsObject()));
@@ -548,6 +603,23 @@ class SqliteMvpStorage {
     }
   }
 
+  listSyncOperationEntityIds() {
+    const statement = this.db.prepare("SELECT operation_json FROM sync_operations");
+
+    try {
+      const ids = [];
+      while (statement.step()) {
+        const operation = JSON.parse(String(statement.getAsObject().operation_json || "{}"));
+        if (operation?.entityId) {
+          ids.push(operation.entityId);
+        }
+      }
+      return ids;
+    } finally {
+      statement.free();
+    }
+  }
+
   markSyncOperationsPushed(ids, pushedAt) {
     if (!Array.isArray(ids) || ids.length === 0) {
       return 0;
@@ -618,7 +690,10 @@ class SqliteMvpStorage {
   }
 
   close() {
-    this.persist();
+    if (this.persistDirty) {
+      this.persistDepth = 0;
+      this.flushDeferredPersistence();
+    }
     this.db.close();
   }
 }

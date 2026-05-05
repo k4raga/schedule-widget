@@ -6,6 +6,13 @@ function ensureDateKey(dateKey) {
   }
 }
 
+function ensureCarryoverInput(input) {
+  if (!input || typeof input !== "object") {
+    throw new Error("carryover payload must be an object");
+  }
+  ensureDateKey(input.dateKey);
+}
+
 function ensureTaskInput(input) {
   if (!input || typeof input !== "object") {
     throw new Error("task payload must be an object");
@@ -79,6 +86,15 @@ const api = {
   async listTasks(dateKey) {
     ensureDateKey(dateKey);
     return ipcRenderer.invoke("v2:tasks:list", { dateKey });
+  },
+
+  async listCarryoverNotes(input) {
+    ensureCarryoverInput(input);
+    return ipcRenderer.invoke("v2:notes:carryover", {
+      dateKey: input.dateKey,
+      minStartTime: input.minStartTime || null,
+      lookbackDays: input.lookbackDays || null,
+    });
   },
 
   async createTask(input) {
