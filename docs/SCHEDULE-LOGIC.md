@@ -30,7 +30,7 @@ Fixed checklist notes:
 - Morning plan
 - Shorts
 
-Each fixed note has a done/not-done checkbox. Temporary notes are added through the permanent "new task" row. Once a temporary note is saved, it appears with a checkbox-like control, but pressing it frees/removes that temporary note instead of toggling a done state. Temporary notes should look slightly different from fixed notes.
+Each fixed note has a done/not-done checkbox, and that status is scoped to the selected day. If Armory was done yesterday, it must be available again today. Temporary notes are added through the permanent "new task" row. Once a temporary note is saved, it appears with a checkbox-like control, but pressing it frees/removes that temporary note instead of toggling a done state. Temporary notes should look slightly different from fixed notes.
 
 ## Planning and Sprint Launch
 

@@ -1279,17 +1279,14 @@
 
     setStatus("ЧТЕНИЕ...", "busy");
     try {
-      const weekStart = weekStartDateKey(dateKey);
-      const [context, listResponse, weekListResponse] = await Promise.all([
+      const [context, listResponse] = await Promise.all([
         api.getDayContext(dateKey),
         api.listTasks(dateKey),
-        weekStart === dateKey ? Promise.resolve(null) : api.listTasks(weekStart),
       ]);
       const tasks = parseTaskListResponse(listResponse);
-      const weekTasks = weekStart === dateKey ? tasks : parseTaskListResponse(weekListResponse);
       currentContext = context || null;
       loadedTasks = tasks.filter((task) => taskScope(task) === "day");
-      loadedWeeklyTasks = sortWeeklyTasks(weekTasks);
+      loadedWeeklyTasks = sortWeeklyTasks(tasks);
       composerState = null;
       weeklyComposerState = null;
       setDateUI(context?.dateKey || dateKey);
@@ -1360,7 +1357,7 @@
     }
 
     const task = weeklyTaskForSlot(slotIndex);
-    const dateKey = weekStartDateKey(selectedDateKey);
+    const dateKey = selectedDateKey;
     const slotRange = weeklySlotRange(slotIndex);
 
     try {
@@ -1424,7 +1421,7 @@
     }
     const input = dom.content.querySelector("[data-weekly-title]");
     const title = String(input?.value || "").trim() || "\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430";
-    const dateKey = weekStartDateKey(selectedDateKey);
+    const dateKey = selectedDateKey;
     const slotRange = weeklySlotRange(weeklyComposerState.slotIndex);
 
     try {

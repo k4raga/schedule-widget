@@ -4,6 +4,7 @@ const { spawnSync } = require("node:child_process");
 
 const checks = [
   ["node", ["tests/smoke-database-sync.js"]],
+  ["node", ["tests/smoke-daily-notes.js"]],
   ["node", ["tests/smoke-external-events-sync.js"]],
   ["node", ["tests/smoke-recurring-series.js"]],
   ["node", ["tests/smoke-schedule-helpers.js"]],
