@@ -10,7 +10,7 @@ The working day is organized around three clear placement zones:
 
 The visual rule is simple: personal-task slots use the green development tone, and work-task slots use the red work tone.
 
-The lower widget area is a notes/checklist block instead of a weekly-task list. It contains four fixed checklist notes and three free note slots.
+The lower widget area is a notes/checklist block instead of a weekly-task list. It contains four fixed checklist notes, a list of temporary notes, and one permanent "new task" row that never disappears.
 
 ## Base Day
 
@@ -30,7 +30,7 @@ Fixed checklist notes:
 - Morning plan
 - Shorts
 
-Each fixed note has a done/not-done checkbox. The block also has three free note slots for ad-hoc text.
+Each fixed note has a done/not-done checkbox. Temporary notes are added through the permanent "new task" row. Once a temporary note is saved, it appears with a checkbox-like control, but pressing it frees/removes that temporary note instead of toggling a done state. Temporary notes should look slightly different from fixed notes.
 
 ## Planning and Sprint Launch
 

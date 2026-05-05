@@ -37,10 +37,11 @@
   }
 
   function weeklySlotRange(slotIndex) {
-    const startMinute = Math.max(0, Math.min(58, Number(slotIndex) || 0));
+    const startMinute = Math.max(0, Math.min(1438, Number(slotIndex) || 0));
+    const endMinute = startMinute + 1;
     return {
-      startTime: `00:${String(startMinute).padStart(2, "0")}`,
-      endTime: `00:${String(startMinute + 1).padStart(2, "0")}`,
+      startTime: `${String(Math.floor(startMinute / 60)).padStart(2, "0")}:${String(startMinute % 60).padStart(2, "0")}`,
+      endTime: `${String(Math.floor(endMinute / 60)).padStart(2, "0")}:${String(endMinute % 60).padStart(2, "0")}`,
     };
   }
 

@@ -54,10 +54,9 @@
     { title: "\u041d\u0430\u0432\u044b\u043a \u00b7 30 \u043c\u0438\u043d", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
     { title: "\u041f\u043b\u0430\u043d \u043d\u0430 \u0443\u0442\u0440\u043e", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
     { title: "\u0428\u043e\u0440\u0442\u0441", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
-    { title: "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0439 \u0441\u043b\u043e\u0442", source: "\u0417\u0430\u043c\u0435\u0442\u043a\u0430" },
-    { title: "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0439 \u0441\u043b\u043e\u0442", source: "\u0417\u0430\u043c\u0435\u0442\u043a\u0430" },
-    { title: "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0439 \u0441\u043b\u043e\u0442", source: "\u0417\u0430\u043c\u0435\u0442\u043a\u0430" },
   ];
+  const TEMP_NOTE_START_SLOT = NOTE_SLOTS.length;
+  const NOTE_SLOT_LIMIT = 240;
 
   const WORK_GOOGLE_CALENDAR_ID = "3def21724634cc82d171f8c8028fb088f842e2b4cc8f9aa524ad3b2b09d5ad9a@group.calendar.google.com";
 
@@ -156,7 +155,7 @@
   }
 
   function sortWeeklyTasks(tasks) {
-    return helpers.sortWeeklyTasks ? helpers.sortWeeklyTasks(tasks, NOTE_SLOTS.length) : [];
+    return helpers.sortWeeklyTasks ? helpers.sortWeeklyTasks(tasks, NOTE_SLOT_LIMIT) : [];
   }
 
   function monthEndDateKey(dateKey) {
@@ -842,75 +841,120 @@
     `;
   }
 
-  function renderWeeklyTasksBlock() {
-    const rows = Array.from({ length: NOTE_SLOTS.length }, (_item, index) => {
-      const slot = NOTE_SLOTS[index];
-      const task = weeklyTaskForSlot(index);
-      const isEditing = weeklyComposerState?.slotIndex === index;
-      const isFixed = Boolean(slot.fixed);
-      const isDone = task?.status === "done";
+  function noteSlotIndex(task) {
+    const start = parseMinutes(String(task?.startTime || ""));
+    return start == null ? null : start;
+  }
 
-      if (isFixed) {
-        return `
-          <div class="weekly-task-row note-fixed ${isDone ? "done" : "todo"}">
-            <button
-              class="note-check"
-              type="button"
-              data-note-toggle="${index}"
-              data-note-status="${isDone ? "todo" : "done"}"
-              aria-label="${isDone ? "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e" : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
-              title="${isDone ? "\u0421\u0434\u0435\u043b\u0430\u043d\u043e" : "\u041d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
-            >${isDone ? "\u2713" : ""}</button>
-            <div class="weekly-task-info">
-              <div class="weekly-task-title">${escapeHtml(slot.title)}</div>
-              <div class="weekly-task-source">${isDone ? "\u0441\u0434\u0435\u043b\u0430\u043d\u043e" : "\u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}</div>
-            </div>
-          </div>
-        `;
-      }
+  function temporaryNoteTasks() {
+    return loadedWeeklyTasks
+      .filter((task) => {
+        const slotIndex = noteSlotIndex(task);
+        return slotIndex != null && slotIndex >= TEMP_NOTE_START_SLOT;
+      })
+      .slice()
+      .sort((left, right) => {
+        const leftSlot = noteSlotIndex(left) ?? 0;
+        const rightSlot = noteSlotIndex(right) ?? 0;
+        if (leftSlot !== rightSlot) {
+          return leftSlot - rightSlot;
+        }
+        return String(left?.createdAt || "").localeCompare(String(right?.createdAt || ""));
+      });
+  }
 
-      if (isEditing) {
-        return `
-          <div class="weekly-task-row editing">
-            <div class="dot weekly"></div>
-            <div class="weekly-task-info">
-              <input
-                class="weekly-task-input"
-                data-weekly-title
-                type="text"
-                value="${escapeHtml(weeklyComposerState.title || "")}"
-                placeholder="\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430"
-              >
-              <div class="weekly-task-actions">
-                <button type="button" data-weekly-save="${index}">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c</button>
-                <button type="button" data-weekly-cancel>\u041e\u0442\u043c\u0435\u043d\u0430</button>
-                ${task ? `<button type="button" class="danger" data-weekly-delete="${index}">\u041e\u0447\u0438\u0441\u0442\u0438\u0442\u044c</button>` : ""}
-              </div>
-            </div>
-          </div>
-        `;
-      }
+  function nextTemporaryNoteSlotIndex() {
+    const used = new Set(loadedWeeklyTasks.map(noteSlotIndex).filter((value) => value != null));
+    let slotIndex = TEMP_NOTE_START_SLOT;
+    while (used.has(slotIndex) && slotIndex < 1438) {
+      slotIndex += 1;
+    }
+    return slotIndex;
+  }
 
-      const title = task?.title || slot.title;
-      const source = task
-        ? "\u0441\u0432\u043e\u0431\u043e\u0434\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430"
-        : slot.source;
-
-      return `
-      <button class="weekly-task-row ${task ? "filled" : "empty"}" type="button" data-weekly-slot="${index}">
+  function renderNoteComposer(slotIndex) {
+    return `
+      <div class="weekly-task-row editing">
         <div class="dot weekly"></div>
         <div class="weekly-task-info">
-          <div class="weekly-task-title">${escapeHtml(title)}</div>
-          <div class="weekly-task-source">${escapeHtml(source)}</div>
+          <input
+            class="weekly-task-input"
+            data-weekly-title
+            type="text"
+            value="${escapeHtml(weeklyComposerState?.title || "")}"
+            placeholder="\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430"
+          >
+          <div class="weekly-task-actions">
+            <button type="button" data-weekly-save="${slotIndex}">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c</button>
+            <button type="button" data-weekly-cancel>\u041e\u0442\u043c\u0435\u043d\u0430</button>
+          </div>
         </div>
-        <div class="weekly-task-action">${task ? "\u203a" : "+"}</div>
-      </button>
+      </div>
     `;
+  }
+
+  function renderWeeklyTasksBlock() {
+    const fixedRows = Array.from({ length: NOTE_SLOTS.length }, (_item, index) => {
+      const slot = NOTE_SLOTS[index];
+      const task = weeklyTaskForSlot(index);
+      const isDone = task?.status === "done";
+
+      return `
+        <div class="weekly-task-row note-fixed ${isDone ? "done" : "todo"}">
+          <button
+            class="note-check"
+            type="button"
+            data-note-toggle="${index}"
+            data-note-status="${isDone ? "todo" : "done"}"
+            aria-label="${isDone ? "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e" : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
+            title="${isDone ? "\u0421\u0434\u0435\u043b\u0430\u043d\u043e" : "\u041d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
+          >${isDone ? "\u2713" : ""}</button>
+          <div class="weekly-task-info">
+            <div class="weekly-task-title">${escapeHtml(slot.title)}</div>
+            <div class="weekly-task-source">${isDone ? "\u0441\u0434\u0435\u043b\u0430\u043d\u043e" : "\u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}</div>
+          </div>
+        </div>
+      `;
     }).join("");
+
+    const temporaryRows = temporaryNoteTasks().map((task) => {
+      const slotIndex = noteSlotIndex(task);
+      return `
+        <div class="weekly-task-row note-filled">
+          <button
+            class="note-check"
+            type="button"
+            data-note-clear="${slotIndex}"
+            aria-label="\u041e\u0441\u0432\u043e\u0431\u043e\u0434\u0438\u0442\u044c \u0441\u043b\u043e\u0442"
+            title="\u041e\u0441\u0432\u043e\u0431\u043e\u0434\u0438\u0442\u044c \u0441\u043b\u043e\u0442"
+          >\u2713</button>
+          <div class="weekly-task-info">
+            <div class="weekly-task-title">${escapeHtml(task.title || "\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430")}</div>
+            <div class="weekly-task-source">\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430 \u00b7 \u0433\u0430\u043b\u043e\u0447\u043a\u0430 \u043e\u0441\u0432\u043e\u0431\u043e\u0436\u0434\u0430\u0435\u0442 \u0441\u0442\u0440\u043e\u043a\u0443</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const newNoteSlotIndex = weeklyComposerState && weeklyComposerState.slotIndex >= TEMP_NOTE_START_SLOT
+      ? weeklyComposerState.slotIndex
+      : nextTemporaryNoteSlotIndex();
+    const newNoteRow = weeklyComposerState && weeklyComposerState.slotIndex >= TEMP_NOTE_START_SLOT
+      ? renderNoteComposer(newNoteSlotIndex)
+      : `
+        <button class="weekly-task-row note-new" type="button" data-new-note>
+          <div class="dot weekly"></div>
+          <div class="weekly-task-info">
+            <div class="weekly-task-title">\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430</div>
+            <div class="weekly-task-source">\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430</div>
+          </div>
+          <div class="weekly-task-action">+</div>
+        </button>
+      `;
 
     return `
       <div class="section-label weekly-section-label">\u0417\u0430\u043c\u0435\u0442\u043a\u0438</div>
-      <div class="weekly-task-list">${rows}</div>
+      <div class="weekly-task-list">${fixedRows}${temporaryRows}${newNoteRow}</div>
     `;
   }
 
@@ -1379,7 +1423,7 @@
       return;
     }
     const input = dom.content.querySelector("[data-weekly-title]");
-    const title = String(input?.value || "").trim() || "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430";
+    const title = String(input?.value || "").trim() || "\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430";
     const dateKey = weekStartDateKey(selectedDateKey);
     const slotRange = weeklySlotRange(weeklyComposerState.slotIndex);
 
@@ -1387,7 +1431,7 @@
       setStatus("\u0421\u041e\u0425\u0420\u0410\u041d\u0415\u041d\u0418\u0415...", "busy");
       if (!api) {
         const fallbackId = weeklyComposerState.taskId || `weekly-${dateKey}-${weeklyComposerState.slotIndex}`;
-        loadedWeeklyTasks[weeklyComposerState.slotIndex] = {
+        const nextTask = {
           id: fallbackId,
           title,
           dueDate: dateKey,
@@ -1397,6 +1441,11 @@
           endTime: slotRange.endTime,
           createdAt: new Date().toISOString(),
         };
+        loadedWeeklyTasks = [
+          ...loadedWeeklyTasks.filter((task) => task?.id !== fallbackId),
+          nextTask,
+        ];
+        loadedWeeklyTasks = sortWeeklyTasks(loadedWeeklyTasks);
         weeklyComposerState = null;
         renderDay();
         setStatus("\u0417\u0410\u041c\u0415\u0422\u041a\u0410 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0410", "success");
@@ -1430,6 +1479,35 @@
   }
 
   async function handleContentClick(event) {
+    if (event.target.closest("[data-new-note]")) {
+      openWeeklyComposer(nextTemporaryNoteSlotIndex());
+      return;
+    }
+
+    const noteClearButton = event.target.closest("[data-note-clear]");
+    if (noteClearButton) {
+      const slotIndex = Number(noteClearButton.getAttribute("data-note-clear"));
+      const task = Number.isInteger(slotIndex) ? weeklyTaskForSlot(slotIndex) : null;
+      if (!task?.id) {
+        return;
+      }
+      try {
+        setStatus("\u041e\u0421\u0412\u041e\u0411\u041e\u0416\u0414\u0415\u041d\u0418\u0415...", "busy");
+        if (!api) {
+          loadedWeeklyTasks = loadedWeeklyTasks.filter((item) => item?.id !== task.id);
+          renderDay();
+          setStatus("\u0421\u041b\u041e\u0422 \u0421\u0412\u041e\u0411\u041e\u0414\u0415\u041d", "success");
+          return;
+        }
+        await api.deleteTask({ id: task.id });
+        await loadDate(selectedDateKey);
+        setStatus("\u0421\u041b\u041e\u0422 \u0421\u0412\u041e\u0411\u041e\u0414\u0415\u041d", "success");
+      } catch (error) {
+        setStatus(`\u0421\u0411\u041e\u0419 \u041e\u0421\u0412\u041e\u0411\u041e\u0416\u0414\u0415\u041d\u0418\u042f: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
+      }
+      return;
+    }
+
     const noteToggleButton = event.target.closest("[data-note-toggle]");
     if (noteToggleButton) {
       const slotIndex = Number(noteToggleButton.getAttribute("data-note-toggle"));

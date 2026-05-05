@@ -566,8 +566,32 @@ input {
   background: rgba(46, 230, 181, 0.055);
 }
 
-.weekly-task-row.note-fixed {
+.weekly-task-row.note-fixed,
+.weekly-task-row.note-filled {
   align-items: center;
+}
+
+.weekly-task-row.note-filled {
+  background: rgba(46, 230, 181, 0.028);
+  border-left: 1px dashed rgba(46, 230, 181, 0.32);
+}
+
+.weekly-task-row.note-filled .weekly-task-title {
+  font-weight: 600;
+}
+
+.weekly-task-row.note-filled .weekly-task-source {
+  color: rgba(46, 230, 181, 0.42);
+}
+
+.weekly-task-row.note-new {
+  align-items: center;
+  border-top: 1px dashed rgba(46, 230, 181, 0.18);
+}
+
+.weekly-task-row.note-new .weekly-task-title {
+  color: rgba(217, 255, 241, 0.72);
+  font-weight: 600;
 }
 
 .weekly-task-row.note-fixed.done .weekly-task-title {
