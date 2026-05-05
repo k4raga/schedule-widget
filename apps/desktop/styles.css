@@ -599,6 +599,11 @@ input {
   text-decoration: line-through;
 }
 
+.weekly-task-row.note-filled.done .weekly-task-title {
+  color: rgba(217, 255, 241, 0.62);
+  text-decoration: line-through;
+}
+
 .note-check {
   width: 18px;
   height: 18px;
@@ -618,6 +623,11 @@ input {
   border-color: rgba(46, 230, 181, 0.78);
   background: rgba(46, 230, 181, 0.12);
   outline: none;
+}
+
+.note-check:disabled {
+  opacity: 0.72;
+  cursor: default;
 }
 
 .weekly-task-info {

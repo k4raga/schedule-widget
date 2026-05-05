@@ -40,6 +40,31 @@ async function run() {
     assert.equal(yesterdayTasks.find((task) => task.id === yesterdayNote.id)?.status, "done");
     assert.equal(todayTasks.some((task) => task.title === "Армори · 30 мин"), false);
 
+    const openTemporaryNote = await backend.createTask({
+      title: "Open carry note",
+      date: "2026-05-04",
+      startTime: "00:04",
+      endTime: "00:05",
+      scope: "week",
+    });
+    const doneTemporaryNote = await backend.createTask({
+      title: "Done carry note",
+      date: "2026-05-04",
+      startTime: "00:05",
+      endTime: "00:06",
+      scope: "week",
+    });
+    await backend.setTaskStatus({ id: doneTemporaryNote.id, status: "done" });
+
+    const carrySourceTasks = await backend.listTasksForDate({ date: "2026-05-04" });
+    const carried = carrySourceTasks
+      .filter((task) => task.scope === "week")
+      .filter((task) => task.startTime >= "00:04")
+      .filter((task) => task.status !== "done");
+
+    assert.equal(carried.length, 1);
+    assert.equal(carried[0].id, openTemporaryNote.id);
+
     console.log("smoke-daily-notes: ok");
   } finally {
     await backend.close();

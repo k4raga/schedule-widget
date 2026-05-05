@@ -57,6 +57,7 @@
   ];
   const TEMP_NOTE_START_SLOT = NOTE_SLOTS.length;
   const NOTE_SLOT_LIMIT = 240;
+  const NOTE_CARRYOVER_LOOKBACK_DAYS = 14;
 
   const WORK_GOOGLE_CALENDAR_ID = "3def21724634cc82d171f8c8028fb088f842e2b4cc8f9aa524ad3b2b09d5ad9a@group.calendar.google.com";
 
@@ -126,14 +127,6 @@
     return `${parsed.getFullYear()}-${month}-${day}`;
   }
 
-  function weekStartDateKey(dateKey) {
-    return helpers.weekStartDateKey ? helpers.weekStartDateKey(dateKey) : dateKey;
-  }
-
-  function weekEndDateKey(dateKey) {
-    return helpers.weekEndDateKey ? helpers.weekEndDateKey(dateKey) : shiftDateKey(weekStartDateKey(dateKey), 6);
-  }
-
   function weeklySlotRange(slotIndex) {
     return helpers.weeklySlotRange
       ? helpers.weeklySlotRange(slotIndex)
@@ -156,6 +149,35 @@
 
   function sortWeeklyTasks(tasks) {
     return helpers.sortWeeklyTasks ? helpers.sortWeeklyTasks(tasks, NOTE_SLOT_LIMIT) : [];
+  }
+
+  function previousDateKeys(dateKey, count) {
+    return Array.from({ length: count }, (_item, index) => shiftDateKey(dateKey, -(index + 1)));
+  }
+
+  function carriedTemporaryNotes(tasks) {
+    const byTitle = new Map();
+    tasks
+      .filter((task) => taskScope(task) === "week")
+      .filter((task) => {
+        const slotIndex = noteSlotIndex(task);
+        return slotIndex != null && slotIndex >= TEMP_NOTE_START_SLOT && task?.status !== "done";
+      })
+      .forEach((task) => {
+        const title = String(task?.title || "").trim();
+        if (!title || byTitle.has(title)) {
+          return;
+        }
+        byTitle.set(title, task);
+      });
+    return Array.from(byTitle.values()).map((task, index) => {
+      const slotRange = weeklySlotRange(TEMP_NOTE_START_SLOT + index);
+      return {
+        ...task,
+        startTime: slotRange.startTime,
+        endTime: slotRange.endTime,
+      };
+    });
   }
 
   function monthEndDateKey(dateKey) {
@@ -863,8 +885,12 @@
       });
   }
 
+  function activeTemporaryNoteTasks() {
+    return temporaryNoteTasks().filter((task) => task?.status !== "done");
+  }
+
   function nextTemporaryNoteSlotIndex() {
-    const used = new Set(loadedWeeklyTasks.map(noteSlotIndex).filter((value) => value != null));
+    const used = new Set(activeTemporaryNoteTasks().map(noteSlotIndex).filter((value) => value != null));
     let slotIndex = TEMP_NOTE_START_SLOT;
     while (used.has(slotIndex) && slotIndex < 1438) {
       slotIndex += 1;
@@ -919,18 +945,19 @@
 
     const temporaryRows = temporaryNoteTasks().map((task) => {
       const slotIndex = noteSlotIndex(task);
+      const isDone = task?.status === "done";
       return `
-        <div class="weekly-task-row note-filled">
+        <div class="weekly-task-row note-filled ${isDone ? "done" : "todo"}">
           <button
             class="note-check"
             type="button"
-            data-note-clear="${slotIndex}"
-            aria-label="\u041e\u0441\u0432\u043e\u0431\u043e\u0434\u0438\u0442\u044c \u0441\u043b\u043e\u0442"
-            title="\u041e\u0441\u0432\u043e\u0431\u043e\u0434\u0438\u0442\u044c \u0441\u043b\u043e\u0442"
-          >\u2713</button>
+            ${isDone ? "disabled" : `data-temp-note-done="${slotIndex}"`}
+            aria-label="${isDone ? "\u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e" : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
+            title="${isDone ? "\u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u043e" : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
+          >${isDone ? "\u2713" : ""}</button>
           <div class="weekly-task-info">
             <div class="weekly-task-title">${escapeHtml(task.title || "\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430")}</div>
-            <div class="weekly-task-source">\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430 \u00b7 \u0433\u0430\u043b\u043e\u0447\u043a\u0430 \u043e\u0441\u0432\u043e\u0431\u043e\u0436\u0434\u0430\u0435\u0442 \u0441\u0442\u0440\u043e\u043a\u0443</div>
+            <div class="weekly-task-source">${isDone ? "\u0441\u0434\u0435\u043b\u0430\u043d\u043e \u0441\u0435\u0433\u043e\u0434\u043d\u044f" : "\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430 \u00b7 \u043f\u0435\u0440\u0435\u043d\u0435\u0441\u0435\u0442\u0441\u044f, \u0435\u0441\u043b\u0438 \u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u0442\u044c"}</div>
           </div>
         </div>
       `;
@@ -1279,14 +1306,20 @@
 
     setStatus("ЧТЕНИЕ...", "busy");
     try {
-      const [context, listResponse] = await Promise.all([
+      const carryDates = previousDateKeys(dateKey, NOTE_CARRYOVER_LOOKBACK_DAYS);
+      const [context, listResponse, ...carryResponses] = await Promise.all([
         api.getDayContext(dateKey),
         api.listTasks(dateKey),
+        ...carryDates.map((carryDate) => api.listTasks(carryDate)),
       ]);
       const tasks = parseTaskListResponse(listResponse);
+      const carryTasks = carryResponses.flatMap(parseTaskListResponse);
       currentContext = context || null;
       loadedTasks = tasks.filter((task) => taskScope(task) === "day");
-      loadedWeeklyTasks = sortWeeklyTasks(tasks);
+      loadedWeeklyTasks = sortWeeklyTasks([
+        ...tasks,
+        ...carriedTemporaryNotes(carryTasks),
+      ]);
       composerState = null;
       weeklyComposerState = null;
       setDateUI(context?.dateKey || dateKey);
@@ -1332,12 +1365,11 @@
   }
 
   function openWeeklyComposer(slotIndex) {
-    const task = weeklyTaskForSlot(slotIndex);
     weeklyComposerState = {
       slotIndex,
-      taskId: task?.id || null,
-      title: task?.title || "",
-      initialTitle: task?.title || "",
+      taskId: null,
+      title: "",
+      initialTitle: "",
     };
     composerState = null;
     renderDay();
@@ -1475,32 +1507,60 @@
     }
   }
 
+  async function completeTemporaryNote(slotIndex) {
+    const task = weeklyTaskForSlot(slotIndex);
+    if (!task?.id || task.status === "done") {
+      return;
+    }
+
+    try {
+      setStatus("\u041e\u0422\u041c\u0415\u0422\u041a\u0410...", "busy");
+      if (!api) {
+        const updated = {
+          ...task,
+          status: "done",
+          dueDate: selectedDateKey,
+          date: selectedDateKey,
+        };
+        loadedWeeklyTasks = [
+          ...loadedWeeklyTasks.filter((item) => item?.id !== task.id),
+          updated,
+        ];
+        loadedWeeklyTasks = sortWeeklyTasks(loadedWeeklyTasks);
+        renderDay();
+        setStatus("\u0421\u0414\u0415\u041b\u0410\u041d\u041e", "success");
+        return;
+      }
+
+      if (task.dueDate !== selectedDateKey && task.date !== selectedDateKey) {
+        await api.updateTask({
+          id: task.id,
+          title: task.title || "\u041d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430",
+          dateKey: selectedDateKey,
+          scope: "week",
+          startTime: task.startTime,
+          endTime: task.endTime,
+        });
+      }
+      await api.setTaskStatus({ id: task.id, status: "done" });
+      await loadDate(selectedDateKey);
+      setStatus("\u0421\u0414\u0415\u041b\u0410\u041d\u041e", "success");
+    } catch (error) {
+      setStatus(`\u0421\u0411\u041e\u0419 \u0417\u0410\u041c\u0415\u0422\u041a\u0418: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
+    }
+  }
+
   async function handleContentClick(event) {
     if (event.target.closest("[data-new-note]")) {
       openWeeklyComposer(nextTemporaryNoteSlotIndex());
       return;
     }
 
-    const noteClearButton = event.target.closest("[data-note-clear]");
-    if (noteClearButton) {
-      const slotIndex = Number(noteClearButton.getAttribute("data-note-clear"));
-      const task = Number.isInteger(slotIndex) ? weeklyTaskForSlot(slotIndex) : null;
-      if (!task?.id) {
-        return;
-      }
-      try {
-        setStatus("\u041e\u0421\u0412\u041e\u0411\u041e\u0416\u0414\u0415\u041d\u0418\u0415...", "busy");
-        if (!api) {
-          loadedWeeklyTasks = loadedWeeklyTasks.filter((item) => item?.id !== task.id);
-          renderDay();
-          setStatus("\u0421\u041b\u041e\u0422 \u0421\u0412\u041e\u0411\u041e\u0414\u0415\u041d", "success");
-          return;
-        }
-        await api.deleteTask({ id: task.id });
-        await loadDate(selectedDateKey);
-        setStatus("\u0421\u041b\u041e\u0422 \u0421\u0412\u041e\u0411\u041e\u0414\u0415\u041d", "success");
-      } catch (error) {
-        setStatus(`\u0421\u0411\u041e\u0419 \u041e\u0421\u0412\u041e\u0411\u041e\u0416\u0414\u0415\u041d\u0418\u042f: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
+    const tempNoteDoneButton = event.target.closest("[data-temp-note-done]");
+    if (tempNoteDoneButton) {
+      const slotIndex = Number(tempNoteDoneButton.getAttribute("data-temp-note-done"));
+      if (Number.isInteger(slotIndex)) {
+        await completeTemporaryNote(slotIndex);
       }
       return;
     }
