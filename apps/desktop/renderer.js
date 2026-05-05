@@ -49,11 +49,14 @@
     { title: "Сон", start: "23:30", end: "07:30", taskable: false },
   ];
 
-  const WEEKLY_TASKS = [
-    { title: "\u0420\u0430\u0437\u043e\u0431\u0440\u0430\u0442\u044c \u0432\u0445\u043e\u0434\u044f\u0449\u0438\u0435", source: "\u041f\u043b\u0435\u0439\u0441\u0445\u043e\u043b\u0434\u0435\u0440 \u043d\u0430 \u043d\u0435\u0434\u0435\u043b\u044e" },
-    { title: "\u041f\u043b\u0430\u043d \u043d\u0435\u0434\u0435\u043b\u0438", source: "\u041f\u043b\u0435\u0439\u0441\u0445\u043e\u043b\u0434\u0435\u0440 \u043d\u0430 \u043d\u0435\u0434\u0435\u043b\u044e" },
-    { title: "\u0424\u0438\u043d\u0430\u043d\u0441\u044b \u0438 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b", source: "\u041f\u043b\u0435\u0439\u0441\u0445\u043e\u043b\u0434\u0435\u0440 \u043d\u0430 \u043d\u0435\u0434\u0435\u043b\u044e" },
-    { title: "\u0411\u044b\u0442 \u0438 \u043f\u043e\u043a\u0443\u043f\u043a\u0438", source: "\u041f\u043b\u0435\u0439\u0441\u0445\u043e\u043b\u0434\u0435\u0440 \u043d\u0430 \u043d\u0435\u0434\u0435\u043b\u044e" },
+  const NOTE_SLOTS = [
+    { title: "\u0410\u0440\u043c\u043e\u0440\u0438 \u00b7 30 \u043c\u0438\u043d", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
+    { title: "\u041d\u0430\u0432\u044b\u043a \u00b7 30 \u043c\u0438\u043d", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
+    { title: "\u041f\u043b\u0430\u043d \u043d\u0430 \u0443\u0442\u0440\u043e", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
+    { title: "\u0428\u043e\u0440\u0442\u0441", source: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430", fixed: true },
+    { title: "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0439 \u0441\u043b\u043e\u0442", source: "\u0417\u0430\u043c\u0435\u0442\u043a\u0430" },
+    { title: "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0439 \u0441\u043b\u043e\u0442", source: "\u0417\u0430\u043c\u0435\u0442\u043a\u0430" },
+    { title: "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0439 \u0441\u043b\u043e\u0442", source: "\u0417\u0430\u043c\u0435\u0442\u043a\u0430" },
   ];
 
   const WORK_GOOGLE_CALENDAR_ID = "3def21724634cc82d171f8c8028fb088f842e2b4cc8f9aa524ad3b2b09d5ad9a@group.calendar.google.com";
@@ -153,7 +156,7 @@
   }
 
   function sortWeeklyTasks(tasks) {
-    return helpers.sortWeeklyTasks ? helpers.sortWeeklyTasks(tasks, WEEKLY_TASKS.length) : [];
+    return helpers.sortWeeklyTasks ? helpers.sortWeeklyTasks(tasks, NOTE_SLOTS.length) : [];
   }
 
   function monthEndDateKey(dateKey) {
@@ -840,11 +843,32 @@
   }
 
   function renderWeeklyTasksBlock() {
-    const weekStart = weekStartDateKey(selectedDateKey);
-    const weekEnd = weekEndDateKey(selectedDateKey);
-    const rows = Array.from({ length: WEEKLY_TASKS.length }, (_item, index) => {
+    const rows = Array.from({ length: NOTE_SLOTS.length }, (_item, index) => {
+      const slot = NOTE_SLOTS[index];
       const task = weeklyTaskForSlot(index);
       const isEditing = weeklyComposerState?.slotIndex === index;
+      const isFixed = Boolean(slot.fixed);
+      const isDone = task?.status === "done";
+
+      if (isFixed) {
+        return `
+          <div class="weekly-task-row note-fixed ${isDone ? "done" : "todo"}">
+            <button
+              class="note-check"
+              type="button"
+              data-note-toggle="${index}"
+              data-note-status="${isDone ? "todo" : "done"}"
+              aria-label="${isDone ? "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e" : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043a\u0430\u043a \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
+              title="${isDone ? "\u0421\u0434\u0435\u043b\u0430\u043d\u043e" : "\u041d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}"
+            >${isDone ? "\u2713" : ""}</button>
+            <div class="weekly-task-info">
+              <div class="weekly-task-title">${escapeHtml(slot.title)}</div>
+              <div class="weekly-task-source">${isDone ? "\u0441\u0434\u0435\u043b\u0430\u043d\u043e" : "\u043d\u0435 \u0441\u0434\u0435\u043b\u0430\u043d\u043e"}</div>
+            </div>
+          </div>
+        `;
+      }
+
       if (isEditing) {
         return `
           <div class="weekly-task-row editing">
@@ -855,7 +879,7 @@
                 data-weekly-title
                 type="text"
                 value="${escapeHtml(weeklyComposerState.title || "")}"
-                placeholder="\u041d\u0435\u0434\u0435\u043b\u044c\u043d\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430"
+                placeholder="\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430"
               >
               <div class="weekly-task-actions">
                 <button type="button" data-weekly-save="${index}">\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c</button>
@@ -867,10 +891,10 @@
         `;
       }
 
-      const title = task?.title || WEEKLY_TASKS[index].title;
+      const title = task?.title || slot.title;
       const source = task
-        ? `\u043d\u0435\u0434\u0435\u043b\u044c\u043d\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430 \u00b7 ${weekStart}\u2013${weekEnd}`
-        : WEEKLY_TASKS[index].source;
+        ? "\u0441\u0432\u043e\u0431\u043e\u0434\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430"
+        : slot.source;
 
       return `
       <button class="weekly-task-row ${task ? "filled" : "empty"}" type="button" data-weekly-slot="${index}">
@@ -885,7 +909,7 @@
     }).join("");
 
     return `
-      <div class="section-label weekly-section-label">\u041d\u0435\u0434\u0435\u043b\u044c\u043d\u044b\u0435 \u0437\u0430\u0434\u0430\u0447\u0438</div>
+      <div class="section-label weekly-section-label">\u0417\u0430\u043c\u0435\u0442\u043a\u0438</div>
       <div class="weekly-task-list">${rows}</div>
     `;
   }
@@ -1285,12 +1309,77 @@
     });
   }
 
+  async function setFixedNoteStatus(slotIndex, nextStatus) {
+    const slot = NOTE_SLOTS[slotIndex];
+    if (!slot?.fixed || (nextStatus !== "todo" && nextStatus !== "done")) {
+      return;
+    }
+
+    const task = weeklyTaskForSlot(slotIndex);
+    const dateKey = weekStartDateKey(selectedDateKey);
+    const slotRange = weeklySlotRange(slotIndex);
+
+    try {
+      setStatus(nextStatus === "done" ? "\u041e\u0422\u041c\u0415\u0422\u041a\u0410..." : "\u0421\u041d\u042f\u0422\u0418\u0415 \u041e\u0422\u041c\u0415\u0422\u041a\u0418...", "busy");
+      if (!api) {
+        const nextTask = {
+          id: task?.id || `note-${dateKey}-${slotIndex}`,
+          title: slot.title,
+          dueDate: dateKey,
+          date: dateKey,
+          scope: "week",
+          status: nextStatus,
+          startTime: slotRange.startTime,
+          endTime: slotRange.endTime,
+          createdAt: task?.createdAt || new Date().toISOString(),
+        };
+        loadedWeeklyTasks = [
+          ...loadedWeeklyTasks.filter((item) => item?.id !== nextTask.id),
+          nextTask,
+        ];
+        loadedWeeklyTasks = sortWeeklyTasks(loadedWeeklyTasks);
+        renderDay();
+        setStatus(nextStatus === "done" ? "\u0421\u0414\u0415\u041b\u0410\u041d\u041e" : "\u041d\u0415 \u0421\u0414\u0415\u041b\u0410\u041d\u041e", "success");
+        return;
+      }
+
+      let taskId = task?.id || "";
+      if (taskId && task.title !== slot.title) {
+        await api.updateTask({
+          id: taskId,
+          title: slot.title,
+          dateKey,
+          scope: "week",
+          startTime: slotRange.startTime,
+          endTime: slotRange.endTime,
+        });
+      }
+      if (!taskId) {
+        const created = await api.createTask({
+          title: slot.title,
+          dateKey,
+          scope: "week",
+          startTime: slotRange.startTime,
+          endTime: slotRange.endTime,
+        });
+        taskId = created?.id || "";
+      }
+      if (taskId) {
+        await api.setTaskStatus({ id: taskId, status: nextStatus });
+      }
+      await loadDate(selectedDateKey);
+      setStatus(nextStatus === "done" ? "\u0421\u0414\u0415\u041b\u0410\u041d\u041e" : "\u041d\u0415 \u0421\u0414\u0415\u041b\u0410\u041d\u041e", "success");
+    } catch (error) {
+      setStatus(`\u0421\u0411\u041e\u0419 \u0417\u0410\u041c\u0415\u0422\u041a\u0418: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
+    }
+  }
+
   async function saveWeeklyTask() {
     if (!weeklyComposerState) {
       return;
     }
     const input = dom.content.querySelector("[data-weekly-title]");
-    const title = String(input?.value || "").trim() || "\u041d\u0435\u0434\u0435\u043b\u044c\u043d\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430";
+    const title = String(input?.value || "").trim() || "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u0430\u044f \u0437\u0430\u043c\u0435\u0442\u043a\u0430";
     const dateKey = weekStartDateKey(selectedDateKey);
     const slotRange = weeklySlotRange(weeklyComposerState.slotIndex);
 
@@ -1310,7 +1399,7 @@
         };
         weeklyComposerState = null;
         renderDay();
-        setStatus("\u041d\u0415\u0414\u0415\u041b\u042c\u041d\u0410\u042f \u0417\u0410\u0414\u0410\u0427\u0410 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0410", "success");
+        setStatus("\u0417\u0410\u041c\u0415\u0422\u041a\u0410 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0410", "success");
         return;
       }
 
@@ -1334,13 +1423,23 @@
       }
       weeklyComposerState = null;
       await loadDate(selectedDateKey);
-      setStatus("\u041d\u0415\u0414\u0415\u041b\u042c\u041d\u0410\u042f \u0417\u0410\u0414\u0410\u0427\u0410 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0410", "success");
+      setStatus("\u0417\u0410\u041c\u0415\u0422\u041a\u0410 \u041e\u0411\u041d\u041e\u0412\u041b\u0415\u041d\u0410", "success");
     } catch (error) {
-      setStatus(`\u0421\u0411\u041e\u0419 \u041d\u0415\u0414\u0415\u041b\u042c\u041d\u041e\u0419 \u0417\u0410\u0414\u0410\u0427\u0418: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
+      setStatus(`\u0421\u0411\u041e\u0419 \u0417\u0410\u041c\u0415\u0422\u041a\u0418: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
     }
   }
 
   async function handleContentClick(event) {
+    const noteToggleButton = event.target.closest("[data-note-toggle]");
+    if (noteToggleButton) {
+      const slotIndex = Number(noteToggleButton.getAttribute("data-note-toggle"));
+      const nextStatus = noteToggleButton.getAttribute("data-note-status") || "done";
+      if (Number.isInteger(slotIndex)) {
+        await setFixedNoteStatus(slotIndex, nextStatus);
+      }
+      return;
+    }
+
     const weeklySaveButton = event.target.closest("[data-weekly-save]");
     if (weeklySaveButton) {
       await saveWeeklyTask();
@@ -1360,7 +1459,7 @@
       if (!taskId) {
         weeklyComposerState = null;
         renderDay();
-        setStatus("\u041d\u0415\u0414\u0415\u041b\u042c\u041d\u0410\u042f \u0421\u0422\u0420\u041e\u041a\u0410 \u041e\u0427\u0418\u0429\u0415\u041d\u0410", "success");
+        setStatus("\u0417\u0410\u041c\u0415\u0422\u041a\u0410 \u041e\u0427\u0418\u0429\u0415\u041d\u0410", "success");
         return;
       }
 
@@ -1369,7 +1468,7 @@
         await api.deleteTask({ id: taskId });
         weeklyComposerState = null;
         await loadDate(selectedDateKey);
-        setStatus("\u041d\u0415\u0414\u0415\u041b\u042c\u041d\u0410\u042f \u0421\u0422\u0420\u041e\u041a\u0410 \u041e\u0427\u0418\u0429\u0415\u041d\u0410", "success");
+        setStatus("\u0417\u0410\u041c\u0415\u0422\u041a\u0410 \u041e\u0427\u0418\u0429\u0415\u041d\u0410", "success");
       } catch (error) {
         setStatus(`\u0421\u0411\u041e\u0419 \u041e\u0427\u0418\u0421\u0422\u041a\u0418: ${error instanceof Error ? error.message : "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u043e\u0448\u0438\u0431\u043a\u0430"}`, "error");
       }
@@ -1379,7 +1478,7 @@
     const weeklySlotButton = event.target.closest("[data-weekly-slot]");
     if (weeklySlotButton) {
       const slotIndex = Number(weeklySlotButton.getAttribute("data-weekly-slot"));
-      if (Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < WEEKLY_TASKS.length) {
+      if (Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < NOTE_SLOTS.length && !NOTE_SLOTS[slotIndex]?.fixed) {
         openWeeklyComposer(slotIndex);
       }
       return;

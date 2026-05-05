@@ -566,6 +566,36 @@ input {
   background: rgba(46, 230, 181, 0.055);
 }
 
+.weekly-task-row.note-fixed {
+  align-items: center;
+}
+
+.weekly-task-row.note-fixed.done .weekly-task-title {
+  color: rgba(217, 255, 241, 0.72);
+  text-decoration: line-through;
+}
+
+.note-check {
+  width: 18px;
+  height: 18px;
+  margin: 1px 8px 0 0;
+  border: 1px solid rgba(46, 230, 181, 0.42);
+  background: rgba(0, 0, 0, 0.28);
+  color: #d9fff1;
+  display: inline-grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.note-check:hover,
+.note-check:focus-visible {
+  border-color: rgba(46, 230, 181, 0.78);
+  background: rgba(46, 230, 181, 0.12);
+  outline: none;
+}
+
 .weekly-task-info {
   flex: 1;
   min-width: 0;

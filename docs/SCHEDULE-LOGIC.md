@@ -10,6 +10,8 @@ The working day is organized around three clear placement zones:
 
 The visual rule is simple: personal-task slots use the green development tone, and work-task slots use the red work tone.
 
+The lower widget area is a notes/checklist block instead of a weekly-task list. It contains four fixed checklist notes and three free note slots.
+
 ## Base Day
 
 ```text
@@ -18,6 +20,17 @@ The visual rule is simple: personal-task slots use the green development tone, a
 13:00-16:00  Work tasks, red slots
 16:00        Workday closed
 ```
+
+## Notes Block
+
+Fixed checklist notes:
+
+- Armory, 30 minutes
+- Skill, 30 minutes
+- Morning plan
+- Shorts
+
+Each fixed note has a done/not-done checkbox. The block also has three free note slots for ad-hoc text.
 
 ## Planning and Sprint Launch
 
