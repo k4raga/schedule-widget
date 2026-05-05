@@ -25,6 +25,10 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function syncOperationId(clientId) {
+  return `${clientId}:${Date.now()}:${randomUUID()}`;
+}
+
 const IGNORED_GOOGLE_EVENT_TITLES = new Set([
   "проверка тендеров",
   "проверка тендера",
@@ -55,6 +59,67 @@ async function createV2MvpBackend(options = {}) {
     typeof options.googleReadSyncAdapter === "function"
       ? options.googleReadSyncAdapter
       : fetchGoogleCalendarScheduleReadOnly;
+
+  function getSyncClientId() {
+    const existing = String(storage.getSettingValue("sync_client_id") || "").trim();
+    if (existing) {
+      return existing;
+    }
+    const created = randomUUID();
+    storage.setSettingValue("sync_client_id", created);
+    return created;
+  }
+
+  function recordTaskUpsert(task, createdAt = nowIso()) {
+    const clientId = getSyncClientId();
+    storage.recordSyncOperation({
+      id: syncOperationId(clientId),
+      clientId,
+      type: "upsert_task",
+      entityId: task.id,
+      createdAt,
+      task,
+    });
+  }
+
+  function recordTaskDelete(taskId, createdAt = nowIso()) {
+    const clientId = getSyncClientId();
+    storage.recordSyncOperation({
+      id: syncOperationId(clientId),
+      clientId,
+      type: "delete_task",
+      entityId: taskId,
+      createdAt,
+      task: null,
+    });
+  }
+
+  function ensureSyncBootstrapOperations() {
+    if (storage.getSettingValue("sync_bootstrap_done") === "1") {
+      return 0;
+    }
+
+    const timestamp = nowIso();
+    const operatedEntityIds = new Set(
+      storage.listAllSyncOperations()
+        .map((operation) => operation?.entityId)
+        .filter(Boolean)
+    );
+    const tasks = storage.listAllTasks()
+      .filter((task) => !operatedEntityIds.has(task.id));
+    tasks.forEach((task) => recordTaskUpsert(task, timestamp));
+    storage.setSettingValue("sync_bootstrap_done", "1");
+    return tasks.length;
+  }
+
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, options);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body?.ok === false) {
+      throw new Error(String(body?.reason || `sync server returned ${response.status}`));
+    }
+    return body;
+  }
 
   function resolveContextDate(input) {
     const request = normalizeDayContextRequest(input);
@@ -94,6 +159,7 @@ async function createV2MvpBackend(options = {}) {
       };
 
       storage.createTask(task);
+      recordTaskUpsert(task, timestamp);
       storage.setSelectedDate(task.date);
       return task;
     },
@@ -128,6 +194,7 @@ async function createV2MvpBackend(options = {}) {
       });
 
       storage.createTasks(createdTasks);
+      createdTasks.forEach((task) => recordTaskUpsert(task, timestamp));
       storage.setSelectedDate(command.anchorDate);
       return {
         anchorDate: command.anchorDate,
@@ -157,6 +224,7 @@ async function createV2MvpBackend(options = {}) {
       };
 
       storage.updateTask(updatedTask);
+      recordTaskUpsert(updatedTask);
       storage.setSelectedDate(updatedTask.date);
       return updatedTask;
     },
@@ -169,6 +237,7 @@ async function createV2MvpBackend(options = {}) {
       }
 
       storage.deleteTask(command.id);
+      recordTaskDelete(command.id);
       storage.setSelectedDate(existing.date);
       return { id: command.id, deleted: true };
     },
@@ -182,6 +251,11 @@ async function createV2MvpBackend(options = {}) {
 
       const updatedAt = nowIso();
       storage.setTaskStatus(command.id, command.status, updatedAt);
+      recordTaskUpsert({
+        ...existing,
+        status: command.status,
+        updatedAt,
+      });
       storage.setSelectedDate(existing.date);
       return {
         ...existing,
@@ -228,6 +302,58 @@ async function createV2MvpBackend(options = {}) {
         importedCount,
         reason: String(result?.reason || ""),
         notes: String(result?.notes || ""),
+      };
+    },
+
+    async syncDatabaseWithServer(input = {}) {
+      const serverUrl = String(input?.serverUrl || process.env.WATSON_DESK_SYNC_SERVER_URL || "").trim().replace(/\/+$/, "");
+      const token = String(input?.token || process.env.WATSON_DESK_SYNC_TOKEN || "").trim();
+      if (!serverUrl) {
+        return { ok: false, reason: "sync_server_url_missing" };
+      }
+      if (!token) {
+        return { ok: false, reason: "sync_token_missing" };
+      }
+
+      const clientId = getSyncClientId();
+      const bootstrappedCount = ensureSyncBootstrapOperations();
+      const pending = storage.listPendingSyncOperations();
+      const headers = {
+        "authorization": `Bearer ${token}`,
+        "content-type": "application/json",
+      };
+
+      await requestJson(`${serverUrl}/api/sync/push`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ clientId, operations: pending }),
+      });
+      storage.markSyncOperationsPushed(pending.map((operation) => operation.id), nowIso());
+
+      const pulled = await requestJson(`${serverUrl}/api/sync/operations`, {
+        method: "GET",
+        headers,
+      });
+
+      let appliedCount = 0;
+      const operations = Array.isArray(pulled.operations) ? pulled.operations : [];
+      operations.forEach((operation) => {
+        if (operation?.clientId === clientId) {
+          storage.markSyncOperationApplied(operation.id, nowIso());
+          return;
+        }
+        if (storage.applySyncOperation(operation, nowIso())) {
+          appliedCount += 1;
+        }
+      });
+
+      return {
+        ok: true,
+        clientId,
+        bootstrappedCount,
+        pushedCount: pending.length,
+        pulledCount: operations.length,
+        appliedCount,
       };
     },
 

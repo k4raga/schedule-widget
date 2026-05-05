@@ -47,6 +47,14 @@ Run smoke tests:
 npm test
 ```
 
+Run the optional task sync server:
+
+```sh
+npm run sync-server
+```
+
+See `docs/SYNC-SERVER.md` for client/server configuration.
+
 Build the Windows portable package:
 
 ```sh

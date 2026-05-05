@@ -137,6 +137,19 @@ class SqliteMvpStorage {
       );
       CREATE INDEX IF NOT EXISTS external_events_date_idx
       ON external_events(date, start_time, end_time);
+      CREATE TABLE IF NOT EXISTS sync_operations (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        pushed_at TEXT,
+        operation_json TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS sync_operations_pushed_idx
+      ON sync_operations(pushed_at, created_at);
+      CREATE TABLE IF NOT EXISTS applied_sync_operations (
+        id TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL
+      );
     `);
 
     this.ensureColumn("tasks", "scope", "TEXT NOT NULL DEFAULT 'day'");
@@ -197,12 +210,29 @@ class SqliteMvpStorage {
     return result[0]?.values?.[0]?.[0] ?? this.seed.selectedDate;
   }
 
-  setSelectedDate(date) {
+  getSettingValue(key) {
+    const statement = this.db.prepare("SELECT value FROM settings WHERE key = ? LIMIT 1");
+    try {
+      statement.bind([key]);
+      if (!statement.step()) {
+        return null;
+      }
+      return statement.getAsObject().value ?? null;
+    } finally {
+      statement.free();
+    }
+  }
+
+  setSettingValue(key, value) {
     this.db.run(
-      "INSERT OR REPLACE INTO settings(key, value) VALUES ('selected_date', ?)",
-      [date]
+      "INSERT OR REPLACE INTO settings(key, value) VALUES (?, ?)",
+      [key, value]
     );
     this.persist();
+  }
+
+  setSelectedDate(date) {
+    this.setSettingValue("selected_date", date);
   }
 
   listTasksByDate(date) {
@@ -215,6 +245,24 @@ class SqliteMvpStorage {
 
     try {
       statement.bind([date]);
+      const rows = [];
+      while (statement.step()) {
+        rows.push(rowToTask(statement.getAsObject()));
+      }
+      return rows;
+    } finally {
+      statement.free();
+    }
+  }
+
+  listAllTasks() {
+    const statement = this.db.prepare(`
+      SELECT id, date, title, status, start_time, end_time, scope, created_at, updated_at
+      FROM tasks
+      ORDER BY date ASC, created_at ASC, id ASC
+    `);
+
+    try {
       const rows = [];
       while (statement.step()) {
         rows.push(rowToTask(statement.getAsObject()));
@@ -265,6 +313,34 @@ class SqliteMvpStorage {
     );
     this.persist();
     return task;
+  }
+
+  upsertTask(task) {
+    const existing = this.getTaskById(task.id);
+    if (existing && String(existing.updatedAt || "") > String(task.updatedAt || "")) {
+      return false;
+    }
+
+    this.db.run(
+      `
+      INSERT OR REPLACE INTO tasks
+      (id, date, title, status, start_time, end_time, scope, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      [
+        task.id,
+        task.date,
+        task.title,
+        task.status || "todo",
+        task.startTime,
+        task.endTime,
+        task.scope || "day",
+        task.createdAt,
+        task.updatedAt,
+      ]
+    );
+    this.persist();
+    return true;
   }
 
   createTasks(tasks) {
@@ -412,6 +488,133 @@ class SqliteMvpStorage {
       this.persist();
     }
     return changed > 0;
+  }
+
+  recordSyncOperation(operation) {
+    this.db.run(
+      `
+      INSERT OR IGNORE INTO sync_operations
+      (id, client_id, created_at, pushed_at, operation_json)
+      VALUES (?, ?, ?, NULL, ?)
+    `,
+      [
+        operation.id,
+        operation.clientId,
+        operation.createdAt,
+        JSON.stringify(operation),
+      ]
+    );
+    const changed = this.db.getRowsModified();
+    if (changed > 0) {
+      this.persist();
+    }
+    return changed > 0;
+  }
+
+  listPendingSyncOperations() {
+    const statement = this.db.prepare(`
+      SELECT operation_json
+      FROM sync_operations
+      WHERE pushed_at IS NULL
+      ORDER BY created_at ASC, id ASC
+    `);
+
+    try {
+      const operations = [];
+      while (statement.step()) {
+        operations.push(JSON.parse(String(statement.getAsObject().operation_json || "{}")));
+      }
+      return operations;
+    } finally {
+      statement.free();
+    }
+  }
+
+  listAllSyncOperations() {
+    const statement = this.db.prepare(`
+      SELECT operation_json
+      FROM sync_operations
+      ORDER BY created_at ASC, id ASC
+    `);
+
+    try {
+      const operations = [];
+      while (statement.step()) {
+        operations.push(JSON.parse(String(statement.getAsObject().operation_json || "{}")));
+      }
+      return operations;
+    } finally {
+      statement.free();
+    }
+  }
+
+  markSyncOperationsPushed(ids, pushedAt) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return 0;
+    }
+
+    const statement = this.db.prepare("UPDATE sync_operations SET pushed_at = ? WHERE id = ?");
+    let changed = 0;
+    try {
+      for (const id of ids) {
+        statement.run([pushedAt, id]);
+        changed += this.db.getRowsModified();
+      }
+    } finally {
+      statement.free();
+    }
+
+    if (changed > 0) {
+      this.persist();
+    }
+    return changed;
+  }
+
+  hasAppliedSyncOperation(id) {
+    const statement = this.db.prepare("SELECT id FROM applied_sync_operations WHERE id = ? LIMIT 1");
+    try {
+      statement.bind([id]);
+      return statement.step();
+    } finally {
+      statement.free();
+    }
+  }
+
+  markSyncOperationApplied(id, appliedAt) {
+    this.db.run(
+      "INSERT OR IGNORE INTO applied_sync_operations(id, applied_at) VALUES (?, ?)",
+      [id, appliedAt]
+    );
+    const changed = this.db.getRowsModified();
+    if (changed > 0) {
+      this.persist();
+    }
+    return changed > 0;
+  }
+
+  applySyncOperation(operation, appliedAt) {
+    if (!operation?.id || this.hasAppliedSyncOperation(operation.id)) {
+      return false;
+    }
+
+    if (operation.type === "upsert_task" && operation.task) {
+      this.upsertTask(operation.task);
+      this.markSyncOperationApplied(operation.id, appliedAt);
+      return true;
+    }
+
+    if (operation.type === "delete_task") {
+      const existing = this.getTaskById(operation.entityId);
+      if (existing && String(existing.updatedAt || "") > String(operation.createdAt || "")) {
+        this.markSyncOperationApplied(operation.id, appliedAt);
+        return false;
+      }
+      this.deleteTask(operation.entityId);
+      this.markSyncOperationApplied(operation.id, appliedAt);
+      return true;
+    }
+
+    return false;
   }
 
   close() {

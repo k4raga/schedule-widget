@@ -6,6 +6,7 @@
     clock: document.getElementById("clock"),
     dockButton: document.getElementById("dockButton"),
     syncButton: document.getElementById("syncButton"),
+    dbSyncButton: document.getElementById("dbSyncButton"),
     prevDayButton: document.getElementById("prevDayButton"),
     nextDayButton: document.getElementById("nextDayButton"),
     dateButton: document.getElementById("dateButton"),
@@ -19,14 +20,15 @@
 
   const BASE_EVENTS = [
     { title: "Турники + душ + завтрак", start: "07:30", end: "09:00", taskable: false },
-    { title: "Планирование на день", start: "09:00", end: "09:30", taskable: false },
-    { title: "Навык", start: "09:30", end: "10:00", taskable: true },
-    { title: "Рабочий слот", start: "10:00", end: "11:00", taskable: true },
-    { title: "Рабочий слот", start: "11:00", end: "12:00", taskable: true },
+    { title: "Развитие", start: "09:00", end: "10:00", taskable: true },
+    { title: "Развитие", start: "10:00", end: "11:00", taskable: true },
+    { title: "Развитие", start: "11:00", end: "12:00", taskable: true },
     { title: "Рабочий слот", start: "12:00", end: "13:00", taskable: true },
     { title: "Рабочий слот", start: "13:00", end: "14:00", taskable: true },
     { title: "Рабочий слот", start: "14:00", end: "15:00", taskable: true },
     { title: "Рабочий слот", start: "15:00", end: "16:00", taskable: true },
+    { title: "Готовка и уборка", start: "16:00", end: "17:00", taskable: true },
+    { title: "Поесть", start: "17:00", end: "18:00", taskable: false },
     { title: "Стрим", start: "18:00", end: "22:00", taskable: false },
     { title: "Ужин + отчет", start: "22:00", end: "22:30", taskable: false },
     { title: "Сон", start: "22:30", end: "07:30", taskable: false },
@@ -65,6 +67,7 @@
   let composerState = null;
   let weeklyComposerState = null;
   let syncInFlight = false;
+  let dbSyncInFlight = false;
   let segmentModelsById = new Map();
   const slotOverrides = new Map();
   const calendarState = {
@@ -346,10 +349,17 @@
   function eventToneClass(title) {
     const normalized = String(title || "").toLowerCase();
     if (normalized.includes("рабочий слот")) return "tone-work";
-    if (normalized.includes("навык")) return "tone-skill";
+    if (normalized.includes("развитие") || normalized.includes("навык")) return "tone-skill";
     if (normalized.includes("турники") || normalized.includes("планирование")) return "tone-blue";
     if (normalized.includes("стрим")) return "tone-stream";
-    if (normalized.includes("ужин") || normalized.includes("отчет") || normalized.includes("отчёт")) return "tone-evening";
+    if (
+      normalized.includes("готовка")
+      || normalized.includes("уборка")
+      || normalized.includes("поесть")
+      || normalized.includes("ужин")
+      || normalized.includes("отчет")
+      || normalized.includes("отчёт")
+    ) return "tone-evening";
     if (normalized.includes("сон")) return "tone-sleep";
     if (normalized.includes("подъем") || normalized.includes("подъём")) return "tone-blue";
     if (normalized.includes("свободный день")) return "tone-skill";
@@ -370,18 +380,18 @@
 
   function buildWeekendTemplate(weekday) {
     const morningTitle = BASE_EVENTS[0]?.title || "Утро";
-    const planningTitle = BASE_EVENTS[1]?.title || "Планирование";
-    const skillTitle = BASE_EVENTS[2]?.title || "Навык";
-    const workTitle = BASE_EVENTS[3]?.title || "Рабочий слот";
-    const streamTitle = BASE_EVENTS[9]?.title || "Стрим";
-    const dinnerTitle = BASE_EVENTS[10]?.title || "Ужин + отчет";
-    const sleepTitle = BASE_EVENTS[11]?.title || "Сон";
+    const planningTitle = "Планирование";
+    const developmentTitle = "Развитие";
+    const workTitle = "Рабочий слот";
+    const streamTitle = "Стрим";
+    const dinnerTitle = "Ужин + отчет";
+    const sleepTitle = "Сон";
 
     if (weekday === 6) {
       return [
         { title: morningTitle, start: "09:00", end: "10:00", taskable: false },
         { title: planningTitle, start: "10:00", end: "10:30", taskable: false },
-        { title: skillTitle, start: "10:30", end: "11:30", taskable: true },
+        { title: developmentTitle, start: "10:30", end: "11:30", taskable: true },
         { title: workTitle, start: "11:30", end: "12:30", taskable: true },
         { title: workTitle, start: "12:30", end: "13:30", taskable: true },
         { title: workTitle, start: "14:30", end: "15:30", taskable: true },
@@ -394,7 +404,7 @@
     return [
       { title: morningTitle, start: "09:00", end: "10:00", taskable: false },
       { title: planningTitle, start: "10:00", end: "10:30", taskable: false },
-      { title: skillTitle, start: "10:30", end: "11:30", taskable: true },
+      { title: developmentTitle, start: "10:30", end: "11:30", taskable: true },
       { title: workTitle, start: "11:30", end: "12:30", taskable: true },
       { title: workTitle, start: "12:30", end: "13:30", taskable: true },
       { title: streamTitle, start: "18:00", end: "21:00", taskable: false },
@@ -1658,6 +1668,43 @@
     }
   }
 
+  async function runDatabaseSync() {
+    if (!api?.syncDatabase) {
+      setStatus("БД СИНК НЕДОСТУПЕН", "error");
+      return;
+    }
+
+    setStatus("БД СИНК...", "busy");
+    try {
+      const result = await api.syncDatabase();
+      if (!result?.ok) {
+        const reason = String(result?.reason || "sync_failed").replaceAll("_", " ");
+        setStatus(`БД СИНК СБОЙ: ${reason}`, "error");
+        return;
+      }
+
+      await loadDate(selectedDateKey);
+      const pushed = Number(result.pushedCount || 0);
+      const applied = Number(result.appliedCount || 0);
+      setStatus(`БД СИНК ОК: ↑${pushed} ↓${applied}`, "success");
+    } catch (error) {
+      setStatus(`БД СИНК СБОЙ: ${error instanceof Error ? error.message : "неизвестная ошибка"}`, "error");
+    }
+  }
+
+  async function runDatabaseSyncGuarded() {
+    if (dbSyncInFlight) {
+      setStatus("БД СИНК УЖЕ В ПРОЦЕССЕ", "busy");
+      return;
+    }
+    dbSyncInFlight = true;
+    try {
+      await runDatabaseSync();
+    } finally {
+      dbSyncInFlight = false;
+    }
+  }
+
   async function dockWindowLeft() {
     if (!api?.dockWindowLeft) {
       setStatus("ПАНЕЛЬ НЕДОСТУПНА", "error");
@@ -1685,6 +1732,7 @@
   setDateUI(selectedDateKey);
 
   dom.syncButton.addEventListener("click", runSyncSelectedDayGuarded);
+  dom.dbSyncButton?.addEventListener("click", runDatabaseSyncGuarded);
   dom.dockButton?.addEventListener("click", dockWindowLeft);
   dom.prevDayButton.addEventListener("click", () => handleDateShift(-1));
   dom.nextDayButton.addEventListener("click", () => handleDateShift(1));

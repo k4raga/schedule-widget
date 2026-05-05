@@ -19,7 +19,9 @@ service-account*.json
 credentials*.json
 data/watson-desk-state.json
 data/v2-mvp.sqlite
+data/sync-client.json
 data/*.sqlite
+data/sync-server/
 
 *.log
 electron-start.out.log

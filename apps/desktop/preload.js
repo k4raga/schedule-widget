@@ -138,6 +138,10 @@ const api = {
     });
   },
 
+  async syncDatabase() {
+    return ipcRenderer.invoke("v2:sync:database");
+  },
+
   async dockWindowLeft() {
     return ipcRenderer.invoke("v2:window:dock-left");
   }

@@ -106,6 +106,31 @@ function getDatabasePath() {
   return path.join(app.getPath("userData"), "v2-mvp.sqlite");
 }
 
+function getAppIconPath() {
+  return path.resolve(__dirname, "..", "..", "icon.ico");
+}
+
+function getSyncClientConfigPath() {
+  return path.resolve(__dirname, "..", "..", "data", "sync-client.json");
+}
+
+function readSyncClientConfig() {
+  let fileConfig = {};
+  const configPath = getSyncClientConfigPath();
+  if (fs.existsSync(configPath)) {
+    try {
+      fileConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    } catch (error) {
+      fileConfig = {};
+    }
+  }
+
+  return {
+    serverUrl: process.env.WATSON_DESK_SYNC_SERVER_URL || fileConfig.serverUrl || "",
+    token: process.env.WATSON_DESK_SYNC_TOKEN || fileConfig.token || "",
+  };
+}
+
 async function ensureBackend() {
   if (!backend) {
     backend = await createV2MvpBackend({
@@ -192,6 +217,11 @@ function registerIpcHandlers() {
     });
   });
 
+  ipcMain.handle("v2:sync:database", async () => {
+    const service = await ensureBackend();
+    return service.syncDatabaseWithServer(readSyncClientConfig());
+  });
+
   ipcMain.handle("v2:window:dock-left", async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) {
@@ -220,6 +250,7 @@ function createWindow() {
     autoHideMenuBar: true,
     backgroundColor: "#010203",
     title: "Расписание",
+    icon: getAppIconPath(),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -235,6 +266,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.k4raga.watson-desk");
+  }
   ensureCodexPathEnv();
   await ensureBackend();
   registerIpcHandlers();

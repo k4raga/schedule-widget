@@ -16,6 +16,7 @@
   "scripts": {
     "start": "electron ./apps/desktop/main.js",
     "start:v2": "electron ./apps/desktop/main.js",
+    "sync-server": "node apps/sync-server/server.js",
     "test": "node tests/run-smoke-tests.js",
     "build": "electron-builder --win portable"
   },
@@ -29,9 +30,10 @@
   },
   "build": {
     "appId": "com.k4raga.watson-desk",
+    "icon": "icon.ico",
     "win": {
-      "target": "portable",
-      "signAndEditExecutable": false
+      "icon": "icon.ico",
+      "target": "portable"
     }
   }
 }
