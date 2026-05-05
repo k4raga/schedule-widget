@@ -75,7 +75,7 @@ The current base day follows the two-mode workflow documented in:
 
 - `docs/SCHEDULE-LOGIC.md`
 
-The short version: Codex runs one autonomous work sprint from `09:00` to `14:00`, personal laptop work runs alongside it from `09:05` to `13:45`, and the work computer returns to the center only for the `14:00`-`16:00` operator block.
+The short version: `09:00`-`10:00` is planning and sprint launch, `10:00`-`13:00` is green personal-task slots, and `13:00`-`16:00` is red work-task slots.
 
 ## CI
 

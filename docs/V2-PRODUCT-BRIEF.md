@@ -14,14 +14,13 @@ This is not a general-purpose calendar. It is a personal operational control pan
 
 ## Operating Rhythm
 
-The default day structure follows the two-mode schedule in `docs/SCHEDULE-LOGIC.md`:
+The default day structure follows the three-zone schedule in `docs/SCHEDULE-LOGIC.md`:
 
-- `09:00-14:00`: one autonomous work Codex sprint on the work computer
-- `09:05-13:45`: personal laptop deep-work block while the work sprint runs
-- `13:45-14:00`: short personal handoff note
-- `14:00-16:00`: operator block for review, work operations, and preparing the next sprint
+- `09:00-10:00`: planning the day and launching the sprint
+- `10:00-13:00`: personal-task slots using the green development tone
+- `13:00-16:00`: work-task slots using the red work tone
 
-The product should help protect this rhythm: morning is for launching prepared work and preserving attention for personal projects, while 14:00-16:00 is for managing the work process.
+The product should help protect this rhythm through slot placement first: plan, personal tasks, then work tasks.
 
 ## Why v2
 

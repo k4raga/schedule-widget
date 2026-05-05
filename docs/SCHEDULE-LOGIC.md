@@ -2,85 +2,58 @@
 
 ## Core Idea
 
-The working day is organized around two operating modes:
+The working day is organized around three clear placement zones:
 
-1. A morning autonomous Codex sprint on the work computer.
-2. An operator block from 14:00 to 16:00.
+1. Planning and sprint launch from 09:00 to 10:00.
+2. Personal-task slots from 10:00 to 13:00.
+3. Work-task slots from 13:00 to 16:00.
 
-In the morning, Codex receives one large prepared work task and moves it as independently as possible until the session review around 14:00. During that time, personal attention goes to the laptop and personal projects.
-
-After 14:00, attention switches back to the work computer: review the result, run operational checks, answer work messages, and prepare the next sprint.
+The visual rule is simple: personal-task slots use the green development tone, and work-task slots use the red work tone.
 
 ## Base Day
 
 ```text
-09:00-14:00  Work computer: Codex runs one autonomous sprint
-09:05-13:45  Laptop: personal project, deep work
-13:45-14:00  Close personal context and write the next step
-
-14:00-16:00  Work computer: operator block
+09:00-10:00  Plan the day + launch the sprint
+10:00-13:00  Personal tasks, green slots
+13:00-16:00  Work tasks, red slots
 16:00        Workday closed
 ```
 
-## Morning Sprint
+## Planning and Sprint Launch
 
-Goal: give Codex one large work task that can move autonomously.
+Goal: make the day operational before deep work starts.
 
-Good tasks:
+This slot includes:
 
-- feature implementation
-- bug fix
-- writing or updating tests
-- local refactor
-- problem investigation followed by a patch
-- preparing changes for PR
+- decide the main day focus
+- prepare or confirm the Codex sprint
+- launch the sprint
+- check that sync and working context are ready
 
-The morning task should be prepared before the day starts so it can be launched at 09:00 without planning work.
+## Personal Slots
 
-## Personal Block
+Goal: keep 10:00-13:00 reserved for personal tasks.
 
-Goal: use the time while work Codex is running for personal projects on the laptop.
+These slots are taskable and should visually read as green development slots.
 
-Rule: do not scatter attention into work context before 14:00 unless the sprint is clearly blocked.
+## Work Slots
 
-At the end of the personal block, leave a short note:
+Goal: keep 13:00-16:00 reserved for work tasks.
 
-```text
-What I did:
-Where I stopped:
-Next step:
-```
-
-## Operator Block
-
-Goal: manage the work process instead of starting a new large manual development task.
-
-The block includes:
-
-- review the morning sprint result
-- read the Codex report
-- inspect the diff
-- run or check tests
-- accept, reject, or clarify the result
-- close small operational tasks
-- answer work messages and statuses
-- process incoming tasks
-- choose the next large sprint
-- prepare the next morning Sprint Card
-
-Main rule: the next sprint is planned from 14:00 to 16:00, not in the morning.
+These slots are taskable and should visually read as red work slots.
 
 ## Daily Cycle
 
 ```text
-Day N, 14:00-16:00:
-- review sprint N
-- close operations
-- prepare sprint N+1
+09:00:
+- plan the day
+- launch the sprint
 
-Day N+1, 09:00:
-- launch the already prepared sprint
-- move to the personal laptop project
+10:00-13:00:
+- handle personal tasks
+
+13:00-16:00:
+- handle work tasks
 ```
 
 ## Sprint Card
@@ -88,25 +61,26 @@ Day N+1, 09:00:
 ```text
 Date:
 
-Morning sprint 09:00-14:00:
+Planning slot 09:00-10:00:
 Goal:
 Context:
-Can change:
-Cannot touch:
-How to verify:
-Expected report:
 
-Operator block 14:00-16:00:
-1. Review the morning sprint result
-2. Close operational tasks
-3. Prepare the next Sprint Card
+Personal slots 10:00-13:00:
+1.
+2.
+3.
+
+Work slots 13:00-16:00:
+1.
+2.
+3.
 ```
 
 ## Formula
 
 ```text
-09:00-14:00  Work Codex works
-09:05-13:45  I move personal projects
-14:00-16:00  I manage the work process
+09:00-10:00  Plan the day and launch sprint
+10:00-13:00  Personal tasks
+13:00-16:00  Work tasks
 16:00        Work is closed
 ```

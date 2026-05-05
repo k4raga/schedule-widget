@@ -20,10 +20,13 @@
 
   const BASE_EVENTS = [
     { title: "Турники + душ + завтрак", start: "07:30", end: "09:00", taskable: false },
-    { title: "Утренний Codex-спринт", start: "09:00", end: "14:00", taskable: true },
-    { title: "Личный проект на ноутбуке", start: "09:05", end: "13:45", taskable: false },
-    { title: "Заметка личного блока", start: "13:45", end: "14:00", taskable: false },
-    { title: "Операторский блок", start: "14:00", end: "16:00", taskable: true },
+    { title: "Планирование дня + запуск спринта", start: "09:00", end: "10:00", taskable: true },
+    { title: "Развитие: личные задачи", start: "10:00", end: "11:00", taskable: true },
+    { title: "Развитие: личные задачи", start: "11:00", end: "12:00", taskable: true },
+    { title: "Развитие: личные задачи", start: "12:00", end: "13:00", taskable: true },
+    { title: "Рабочий слот", start: "13:00", end: "14:00", taskable: true },
+    { title: "Рабочий слот", start: "14:00", end: "15:00", taskable: true },
+    { title: "Рабочий слот", start: "15:00", end: "16:00", taskable: true },
     { title: "Готовка и уборка", start: "16:00", end: "17:00", taskable: true },
     { title: "Поесть", start: "17:00", end: "18:00", taskable: false },
     { title: "Стрим", start: "18:00", end: "22:00", taskable: false },
