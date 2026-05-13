@@ -17,8 +17,8 @@ This is not a general-purpose calendar. It is a personal operational control pan
 The default day structure follows the three-zone schedule in `docs/SCHEDULE-LOGIC.md`:
 
 - `09:00-10:00`: planning the day and launching the sprint
-- `10:00-13:00`: work-task slots using the red work tone
-- `13:00-16:00`: personal-task slots using the green development tone
+- `10:00-14:00`: work-task slots using the red work tone
+- `14:00-16:00`: personal-task slots using the green development tone
 
 The product should help protect this rhythm through slot placement first: plan, work tasks, then personal tasks.
 

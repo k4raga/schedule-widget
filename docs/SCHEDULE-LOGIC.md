@@ -5,8 +5,8 @@
 The working day is organized around three clear placement zones:
 
 1. Planning and sprint launch from 09:00 to 10:00.
-2. Work-task slots from 10:00 to 13:00.
-3. Personal-task slots from 13:00 to 16:00.
+2. Work-task slots from 10:00 to 14:00.
+3. Personal-task slots from 14:00 to 16:00.
 
 The visual rule is simple: personal-task slots use the green development tone, and work-task slots use the red work tone.
 
@@ -16,8 +16,8 @@ The lower widget area is a notes/checklist block instead of a weekly-task list. 
 
 ```text
 09:00-10:00  Plan the day + launch the sprint
-10:00-13:00  Work tasks, red slots
-13:00-16:00  Personal tasks, green slots
+10:00-14:00  Work tasks, red slots
+14:00-16:00  Personal tasks, green slots
 16:00        Workday closed
 ```
 
@@ -45,13 +45,13 @@ This slot includes:
 
 ## Personal Slots
 
-Goal: keep 13:00-16:00 reserved for personal tasks.
+Goal: keep 14:00-16:00 reserved for personal tasks.
 
 These slots are taskable and should visually read as green development slots.
 
 ## Work Slots
 
-Goal: keep 10:00-13:00 reserved for work tasks.
+Goal: keep 10:00-14:00 reserved for work tasks.
 
 These slots are taskable and should visually read as red work slots.
 
@@ -62,10 +62,10 @@ These slots are taskable and should visually read as red work slots.
 - plan the day
 - launch the sprint
 
-10:00-13:00:
+10:00-14:00:
 - handle work tasks
 
-13:00-16:00:
+14:00-16:00:
 - handle personal tasks
 ```
 
@@ -78,22 +78,22 @@ Planning slot 09:00-10:00:
 Goal:
 Context:
 
-Work slots 10:00-13:00:
+Work slots 10:00-14:00:
 1.
 2.
 3.
+4.
 
-Personal slots 13:00-16:00:
+Personal slots 14:00-16:00:
 1.
 2.
-3.
 ```
 
 ## Formula
 
 ```text
 09:00-10:00  Plan the day and launch sprint
-10:00-13:00  Work tasks
-13:00-16:00  Personal tasks
+10:00-14:00  Work tasks
+14:00-16:00  Personal tasks
 16:00        Work is closed
 ```

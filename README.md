@@ -75,7 +75,7 @@ The current base day follows the two-mode workflow documented in:
 
 - `docs/SCHEDULE-LOGIC.md`
 
-The short version: `09:00`-`10:00` is planning and sprint launch, `10:00`-`13:00` is red work-task slots, and `13:00`-`16:00` is green personal-task slots.
+The short version: `09:00`-`10:00` is planning and sprint launch, `10:00`-`14:00` is red work-task slots, and `14:00`-`16:00` is green personal-task slots.
 
 ## CI
 

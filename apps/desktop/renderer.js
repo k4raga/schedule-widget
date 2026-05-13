@@ -24,7 +24,7 @@
     { title: "Рабочий слот", start: "10:00", end: "11:00", taskable: true },
     { title: "Рабочий слот", start: "11:00", end: "12:00", taskable: true },
     { title: "Рабочий слот", start: "12:00", end: "13:00", taskable: true },
-    { title: "Развитие: личные задачи", start: "13:00", end: "14:00", taskable: true },
+    { title: "Рабочий слот", start: "13:00", end: "14:00", taskable: true },
     { title: "Развитие: личные задачи", start: "14:00", end: "15:00", taskable: true },
     { title: "Развитие: личные задачи", start: "15:00", end: "16:00", taskable: true },
     { title: "Готовка и уборка", start: "16:00", end: "17:00", taskable: true },
